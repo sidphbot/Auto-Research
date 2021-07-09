@@ -319,8 +319,8 @@ class Surveyor:
 
     def get_sectioned_docs(self, papers, papers_meta):
         import random
-        docs = [self.generate_title(section['text']) for p in papers for section in p['sections'] if
-                len(section['text']) > 0]
+        docs = [self.generate_title(section['highlights']) for p in papers for section in p['sections'] if
+                len(section['highlights']) > 0]
         selected_pids = [p['id'] for p in papers]
         meta_abs = [self.generate_title(p['abstract']) for p in papers_meta if p['id'] not in selected_pids]
         docs.extend(meta_abs)
