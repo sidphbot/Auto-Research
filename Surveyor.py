@@ -6,6 +6,7 @@ import scispacy
 import spacy
 import numpy as np
 from keybert import KeyBERT
+
 try:
     from transformers import *
 except:
@@ -13,6 +14,7 @@ except:
         LEDForConditionalGeneration
 
 from defaults import DEFAULTS
+
 
 class Surveyor:
     def __init__(
@@ -96,7 +98,7 @@ class Surveyor:
         if dump_dir:
             self.dump_dir = dump_dir
         else:
-            self.dump_dir =DEFAULTS["dump_dir"]
+            self.dump_dir = DEFAULTS["dump_dir"]
 
         dirs = [self.pdf_dir, self.txt_dir, self.img_dir, self.tab_dir, self.dump_dir]
         if sum([True for dir in dirs if 'arxiv_data/' in dir]):
@@ -281,9 +283,10 @@ class Surveyor:
         '''
 
         inputs = self.ledtokenizer.prepare_seq2seq_batch(longtext, truncation=True, padding='longest',
-                                                    return_tensors='pt').to(self.torch_device)
+                                                         return_tensors='pt').to(self.torch_device)
         summary_ids = self.ledmodel.generate(**inputs)
-        summary = self.ledtokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        summary = self.ledtokenizer.batch_decode(summary_ids, skip_special_tokens=True,
+                                                 clean_up_tokenization_spaces=True)
 
         print("abstractive summary type:" + str(type(summary)))
         return summary[0]
@@ -366,9 +369,10 @@ class Surveyor:
 
     def generate_title(self, longtext):
         inputs = self.title_tokenizer.prepare_seq2seq_batch(longtext, truncation=True, padding='longest',
-                                                       return_tensors='pt').to(self.torch_device)
+                                                            return_tensors='pt').to(self.torch_device)
         summary_ids = self.title_model.generate(**inputs)
-        summary = self.title_tokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        summary = self.title_tokenizer.batch_decode(summary_ids, skip_special_tokens=True,
+                                                    clean_up_tokenization_spaces=True)
 
         return str(summary[0])
 
@@ -527,8 +531,9 @@ class Surveyor:
         res_lines = [str(sent) for sent in list(res_doc.sents)]
         # print("\n".join(res_sents))
         keywords = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])), stop_words='english')
-        keyphrases = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])), keyphrase_ngram_range=(4, 4),
-                                               stop_words='english', use_mmr=True, diversity=0.7)
+        keyphrases = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])),
+                                                    keyphrase_ngram_range=(4, 4),
+                                                    stop_words='english', use_mmr=True, diversity=0.7)
         return res_lines, keywords, keyphrases
 
     def extract_highlights(self, papers):
@@ -1060,9 +1065,11 @@ class Surveyor:
                     ziph.write(os.path.join(root, file),
                                os.path.relpath(os.path.join(root, file),
                                                os.path.join(path, '..')))
-        zipf = zipfile.ZipFile('arxiv_dumps.zip', 'w', zipfile.ZIP_DEFLATED)
+
+        zip_name = 'arxiv_dumps.zip'
+        zipf = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED)
         zipdir(dump_dir, zipf)
-        return zipf
+        return zip_name
 
     def survey(self, query, max_search=100, num_papers=20, debug=False, weigh_authors=False):
         import traceback, sys
@@ -1083,7 +1090,8 @@ class Surveyor:
         if weigh_authors:
             authors = self.author_stats(papers_selected)
 
-        papers_highlighted = self.pdf_route(self.pdf_dir, self.txt_dir, self.img_dir, self.tab_dir, self.dump_dir, papers_selected)
+        papers_highlighted = self.pdf_route(self.pdf_dir, self.txt_dir, self.img_dir, self.tab_dir, self.dump_dir,
+                                            papers_selected)
         joblib.dump(papers_highlighted, self.dump_dir + 'papers_highlighted.dmp')
 
         print("standardizing known section headings per paper.. ")
@@ -1188,14 +1196,19 @@ class Surveyor:
         assert (os.path.exists(survey_file))
         shutil.copy(survey_file, self.dump_dir + '/' + survey_file)
         zipf = self.zip_outputs(self.dump_dir)
+        return zipf, survey_file
+
 
 if __name__ == '__main__':
-
     import argparse
 
     parser = argparse.ArgumentParser(description='Generate a survey just from a query !!')
     parser.add_argument('query', metavar='query_string', type=str,
                         help='your research query/keywords')
+    parser.add_argument('--max_search', metavar='max_metadata_papers', type=str, default=DEFAULTS['max_search'],
+                        help='maximium number of papers to gaze at (currently best to keep it to 100)')
+    parser.add_argument('--num_papers', metavar='max_num_papers', type=str, default=DEFAULTS['num_papers'],
+                        help='maximium number of papers to download and analyse')
     parser.add_argument('--pdf_dir', metavar='pdf_dir', type=str, default=None,
                         help='pdf paper storage directory')
     parser.add_argument('--txt_dir', metavar='txt_dir', type=str, default=None,
@@ -1223,17 +1236,20 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     surveyor = Surveyor(
-        pdf_dir='',
-        txt_dir='',
-        img_dir='',
-        tab_dir='',
-        dump_dir='',
-        title_model_name='',
-        ex_summ_model_name='',
-        ledmodel_name='',
-        embedder_name='',
-        nlp_name=None,
-        similarity_nlp_name=None,
-        kw_model_name=None
-        )
-    surveyor.survey(query, max_search=100, num_papers=20, debug=False, weigh_authors=False)
+        pdf_dir=args['dump_dir'],
+        txt_dir=args['dump_dir'],
+        img_dir=args['dump_dir'],
+        tab_dir=args['dump_dir'],
+        dump_dir=args['dump_dir'],
+        title_model_name=args['dump_dir'],
+        ex_summ_model_name=args['dump_dir'],
+        ledmodel_name=args['dump_dir'],
+        embedder_name=args['dump_dir'],
+        nlp_name=args['dump_dir'],
+        similarity_nlp_name=args['dump_dir'],
+        kw_model_name=args['dump_dir']
+    )
+    output_zip, survey_file = surveyor.survey(query, max_search=args['dump_dir'], num_papers=args['dump_dir'],
+                                              debug=False, weigh_authors=False)
+
+    print("Survey complete.. \nSurvey file path :" + os.path.abspath(survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))
