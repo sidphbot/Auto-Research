@@ -6,6 +6,7 @@ import scispacy
 import spacy
 import numpy as np
 from keybert import KeyBERT
+import shutil
 
 try:
     from transformers import *
@@ -123,7 +124,7 @@ class Surveyor:
                 shutil.rmtree(d)
             os.mkdir(d)
 
-    def pdf_route(self, pdf_dir, txt_dir, img_dir, tab_dir, dump_dir, papers):
+    def pdf_route(self, pdf_dir, txt_dir, img_dir, tab_dir, dump_dir, papers_meta):
         ## Data prep
 
         import joblib
@@ -131,24 +132,20 @@ class Surveyor:
 
         self.clean_dirs([pdf_dir, txt_dir, img_dir, tab_dir, dump_dir])
 
-        print("downloading pdfs.. ")
-        # full text preparation of selected papers
-        self.download_pdfs(papers, pdf_dir)
-        print("converting pdfs.. ")
-        self.convert_pdfs(pdf_dir, txt_dir)
-
-        # plugging citations to our papers object
-        print("plugging in citation network.. ")
-        papers = self.cocitation_network(papers, txt_dir)
-
-        joblib.dump(papers, dump_dir + 'papers_selected_pdf_route.dmp')
-        from distutils.dir_util import copy_tree
-
-        copy_tree(txt_dir, dump_dir + os.path.basename(txt_dir))
-        copy_tree(pdf_dir, dump_dir + os.path.basename(pdf_dir))
-
-        print("extracting structure.. ")
-        papers = self.extract_structure(papers, pdf_dir, txt_dir, img_dir, dump_dir, tab_dir)
+        papers = searched_papers[:self.num_papers]
+        selected_papers = papers
+        ids_none, papers, cites = self.fetch_papers(dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir)
+        new_papers = papers_meta[self.num_papers : self.num_papers + len(ids_none)]
+        '''
+        filtered_idlist = []
+        for c in self.get_freq_cited(cites):
+            if c in 
+        _, new_searched_papers = self.search(filtered_idlist)
+        new_papers.extend(new_searched_papers)
+        '''
+        selected_papers.extend(new_papers)
+        _, new_papers, _ = self.fetch_papers(dump_dir, img_dir, new_papers, pdf_dir, tab_dir, txt_dir)
+        papers.extend(new_papers)
 
         joblib.dump(papers, dump_dir + 'papers_extracted_pdf_route.dmp')
         copy_tree(img_dir, dump_dir + os.path.basename(img_dir))
@@ -157,7 +154,51 @@ class Surveyor:
         print("extracting section-wise highlights.. ")
         papers = self.extract_highlights(papers)
 
-        return papers
+        return papers, selected_papers
+
+
+    def get_freq_cited(self, cites_dict, k=5):
+        cites_list = []
+        for k, v in cites_dict:
+            cites_list.append(k)
+            [cites_list.append(val) for val in v]
+        cite_freqs = {cite: cites_list.count(cite) for cite in set(cites_list)}
+        sorted_cites = dict(sorted(cite_freqs.items(), key=lambda item: item[1], reverse=True)[:5])
+        print("\nThe most cited paper ids are:\n" + str(sorted_cites))
+
+        return sorted_cites.keys()
+
+
+    def fetch_papers(self, dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir, repeat=False):
+
+        if repeat:
+            with tempfile.TemporaryDirectory() as dirpath:
+                print("downloading extra pdfs.. ")
+                # full text preparation of selected papers
+                self.download_pdfs(papers, dirpath)
+                dirpath_pdfs = os.listdir(dirpath)
+                for file_name in dirpath_pdfs:
+                    full_file_name = os.path.join(src, file_name)
+                    if os.path.isfile(full_file_name):
+                        shutil.copy(full_file_name, pdf_dir)
+                print("converting extra pdfs.. ")
+                self.convert_pdfs(dirpath, txt_dir)
+        else:
+            print("downloading pdfs.. ")
+            # full text preparation of selected papers
+            self.download_pdfs(papers, pdf_dir)
+            print("converting pdfs.. ")
+            self.convert_pdfs(pdf_dir, txt_dir)
+        # plugging citations to our papers object
+        print("plugging in citation network.. ")
+        papers, cites = self.cocitation_network(papers, txt_dir)
+        joblib.dump(papers, dump_dir + 'papers_selected_pdf_route.dmp')
+        from distutils.dir_util import copy_tree
+        copy_tree(txt_dir, dump_dir + os.path.basename(txt_dir))
+        copy_tree(pdf_dir, dump_dir + os.path.basename(pdf_dir))
+        print("extracting structure.. ")
+        papers, ids_none = self.extract_structure(papers, pdf_dir, txt_dir, img_dir, dump_dir, tab_dir)
+        return ids_none, papers, cites
 
     def tar_route(self, pdf_dir, txt_dir, img_dir, tab_dir, papers):
         ## Data prep
@@ -172,7 +213,7 @@ class Surveyor:
         self.convert_pdfs(pdf_dir, txt_dir)
 
         # plugging citations to our papers object
-        papers = self.cocitation_network(papers, txt_dir)
+        papers, cites = self.cocitation_network(papers, txt_dir)
 
         joblib.dump(papers, 'papers_selected_tar_route.dmp')
 
@@ -586,7 +627,7 @@ class Surveyor:
 
     def extract_structure(self, papers, pdf_dir, txt_dir, img_dir, dump_dir, tab_dir, tables=False):
         print("extracting sections.. ")
-        papers = self.extract_parts(papers, txt_dir, dump_dir)
+        papers, ids_none = self.extract_parts(papers, txt_dir, dump_dir)
 
         print("extracting images.. for future correlation use-cases ")
         papers = self.extract_images(papers, pdf_dir, img_dir)
@@ -595,7 +636,7 @@ class Surveyor:
             print("extracting tables.. for future correlation use-cases ")
             papers = self.extract_tables(papers, pdf_dir, tab_dir)
 
-        return papers
+        return papers, ids_none
 
     def extract_parts(self, papers, txt_dir, dump_dir):
         import glob
@@ -609,11 +650,12 @@ class Surveyor:
             sections = self.extract_sections(headings_extracted, refined)
             # highlights = {k: extract_highlights(model,v) for k, v in sections.items()}
             p = self.get_by_file(file, papers)
-            p['body_text'] = sections
+            if len(headings_extracted) > 3:
+                p['body_text'] = sections
             # p['body_highlights'] = highlights
-            headings_all[file] = headings_extracted
+            headings_all[p['id']] = headings_extracted
 
-        joblib.dump(papers, dump_dir + 'papers_extracted_pdf_route_sections.dmp')
+        ids_none = {i: h for i, h in headings_all.items() if len(h) < 3}
 
         for f, h in headings_all.items():
             if len(h) < 4:
@@ -622,8 +664,11 @@ class Surveyor:
                 print(h)
         # from pprint import pprint
         # pprint({f: len(h) for f,h in headings_all.items()})
+        papers_none = [p for p in papers if p['id'] in ids_none]
+        for p in papers_none:
+            papers.remove(p)
 
-        return papers
+        return papers, ids_none
 
     def check_para(self, df):
         size = 0
@@ -916,15 +961,20 @@ class Surveyor:
         # print(papers[0].keys())
         return papers
 
-    def search(self, query_text, max_search):
+    def search(self, query_text=None, id_list=None, max_search=100):
         import arxiv
         from urllib.parse import urlparse
 
-        search = arxiv.Search(
-            query=query_text,
-            max_results=max_search,
-            sort_by=arxiv.SortCriterion.Relevance
-        )
+        if query_text:
+            search = arxiv.Search(
+                query=query_text,
+                max_results=max_search,
+                sort_by=arxiv.SortCriterion.Relevance
+            )
+        else:
+            search = arxiv.Search(
+                id_list=id_list
+            )
 
         results = [result for result in search.get()]
 
@@ -1003,7 +1053,7 @@ class Surveyor:
 
         for p in papers:
             p['cites'] = cites[p['id']]
-        return papers
+        return papers, cites
 
     def lookup_author(self, author_query):
 
@@ -1119,13 +1169,13 @@ class Surveyor:
 
         # paper selection by scibert vector embedding relevance scores
         # papers_selected = select_papers(searched_papers, query, num_papers=num_papers)
-        papers_selected = searched_papers[:num_papers]
+
+        papers_highlighted, papers_selected = self.pdf_route(self.pdf_dir, self.txt_dir, self.img_dir, self.tab_dir, self.dump_dir,
+                                            searched_papers)
 
         if weigh_authors:
-            authors = self.author_stats(papers_selected)
+            authors = self.author_stats(papers_highlighted)
 
-        papers_highlighted = self.pdf_route(self.pdf_dir, self.txt_dir, self.img_dir, self.tab_dir, self.dump_dir,
-                                            papers_selected)
         joblib.dump(papers_highlighted, self.dump_dir + 'papers_highlighted.dmp')
 
         print("standardizing known section headings per paper.. ")
