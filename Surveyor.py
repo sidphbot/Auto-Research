@@ -51,9 +51,9 @@ class Surveyor:
         if not kw_model_name:
             kw_model_name = DEFAULTS["kw_model_name"]
         if not high_gpu:
-            aelf.high_gpu = DEFAULTS["high_gpu"]
+            self.high_gpu = DEFAULTS["high_gpu"]
         else:
-            aelf.high_gpu = high_gpu
+            self.high_gpu = high_gpu
 
         self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
         self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name).to(self.torch_device)
