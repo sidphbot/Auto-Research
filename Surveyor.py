@@ -146,7 +146,7 @@ class Surveyor:
         new_papers.extend(new_searched_papers)
         '''
         selected_papers.extend(new_papers)
-        _, new_papers, _ = self.fetch_papers(dump_dir, img_dir, new_papers, pdf_dir, tab_dir, txt_dir)
+        _, new_papers, _ = self.fetch_papers(dump_dir, img_dir, new_papers, pdf_dir, tab_dir, txt_dir, repeat=True)
         papers.extend(new_papers)
 
         joblib.dump(papers, dump_dir + 'papers_extracted_pdf_route.dmp')
