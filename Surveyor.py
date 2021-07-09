@@ -1071,13 +1071,16 @@ class Surveyor:
         zipdir(dump_dir, zipf)
         return zip_name
 
-    def survey(self, query, max_search=100, num_papers=20, debug=False, weigh_authors=False):
+    def survey(self, query, max_search=None, num_papers=None, debug=False, weigh_authors=False):
         import traceback, sys
         import joblib
         import os, shutil
         import numpy
         import random
-
+        if not max_search:
+            max_search = DEFAULTS['max_search']
+        if not num_papers:
+            num_papers = DEFAULTS['num_papers']
         # arxiv api relevance search and data preparation
         results, searched_papers = self.search(query, max_search=max_search)
         joblib.dump(searched_papers, self.dump_dir + 'papers_metadata.dmp')
@@ -1205,9 +1208,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate a survey just from a query !!')
     parser.add_argument('query', metavar='query_string', type=str,
                         help='your research query/keywords')
-    parser.add_argument('--max_search', metavar='max_metadata_papers', type=str, default=DEFAULTS['max_search'],
+    parser.add_argument('--max_search', metavar='max_metadata_papers', type=int, default=None,
                         help='maximium number of papers to gaze at (currently best to keep it to 100)')
-    parser.add_argument('--num_papers', metavar='max_num_papers', type=str, default=DEFAULTS['num_papers'],
+    parser.add_argument('--num_papers', metavar='max_num_papers', type=int, default=None,
                         help='maximium number of papers to download and analyse')
     parser.add_argument('--pdf_dir', metavar='pdf_dir', type=str, default=None,
                         help='pdf paper storage directory')
@@ -1236,20 +1239,20 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     surveyor = Surveyor(
-        pdf_dir=args['dump_dir'],
-        txt_dir=args['dump_dir'],
-        img_dir=args['dump_dir'],
-        tab_dir=args['dump_dir'],
+        pdf_dir=args['pdf_dir'],
+        txt_dir=args['txt_dir'],
+        img_dir=args['img_dir'],
+        tab_dir=args['tab_dir'],
         dump_dir=args['dump_dir'],
-        title_model_name=args['dump_dir'],
-        ex_summ_model_name=args['dump_dir'],
-        ledmodel_name=args['dump_dir'],
-        embedder_name=args['dump_dir'],
-        nlp_name=args['dump_dir'],
-        similarity_nlp_name=args['dump_dir'],
-        kw_model_name=args['dump_dir']
+        title_model_name=args['title_model_name'],
+        ex_summ_model_name=args['ex_summ_model_name'],
+        ledmodel_name=args['ledmodel_name'],
+        embedder_name=args['embedder_name'],
+        nlp_name=args['nlp_name'],
+        similarity_nlp_name=args['similarity_nlp_name'],
+        kw_model_name=args['kw_model_name']
     )
-    output_zip, survey_file = surveyor.survey(query, max_search=args['dump_dir'], num_papers=args['dump_dir'],
+    output_zip, survey_file = surveyor.survey(args['query'], max_search=args['max_search'], num_papers=args['num_papers'],
                                               debug=False, weigh_authors=False)
 
     print("Survey complete.. \nSurvey file path :" + os.path.abspath(survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))
