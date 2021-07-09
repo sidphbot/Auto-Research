@@ -1144,7 +1144,7 @@ class Surveyor:
         print("outputs: " + outputs)
         return outputs
 
-    def zip_outputs(self, dump_dir):
+    def zip_outputs(self, dump_dir, query):
         import zipfile, shutil
         def zipdir(path, ziph):
             # ziph is zipfile handle
@@ -1154,7 +1154,7 @@ class Surveyor:
                                os.path.relpath(os.path.join(root, file),
                                                os.path.join(path, '..')))
 
-        zip_name = 'arxiv_dumps.zip'
+        zip_name = 'arxiv_dumps_'+query.replace(' ', '_')+'.zip'
         zipf = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED)
         zipdir(dump_dir, zipf)
         return zip_name
@@ -1286,7 +1286,10 @@ class Surveyor:
         shutil.copytree('arxiv_data/', self.dump_dir + '/arxiv_data/')
         assert (os.path.exists(survey_file))
         shutil.copy(survey_file, self.dump_dir + '/' + survey_file)
-        zipf = self.zip_outputs(self.dump_dir)
+        zipf = self.zip_outputs(self.dump_dir, query)
+        print("Survey complete.. \nSurvey file path :" + os.path.abspath(
+            survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))
+
         return zipf, survey_file
 
 
