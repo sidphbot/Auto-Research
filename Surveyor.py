@@ -1,6 +1,6 @@
+import torch
 import os
 from summarizer import Summarizer
-import torch
 from sentence_transformers import SentenceTransformer
 import scispacy
 import spacy
@@ -1239,20 +1239,20 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     surveyor = Surveyor(
-        pdf_dir=args['pdf_dir'],
-        txt_dir=args['txt_dir'],
-        img_dir=args['img_dir'],
-        tab_dir=args['tab_dir'],
-        dump_dir=args['dump_dir'],
-        title_model_name=args['title_model_name'],
-        ex_summ_model_name=args['ex_summ_model_name'],
-        ledmodel_name=args['ledmodel_name'],
-        embedder_name=args['embedder_name'],
-        nlp_name=args['nlp_name'],
-        similarity_nlp_name=args['similarity_nlp_name'],
-        kw_model_name=args['kw_model_name']
+        pdf_dir=args.pdf_dir,
+        txt_dir=args.txt_dir,
+        img_dir=args.img_dir,
+        tab_dir=args.tab_dir,
+        dump_dir=args.dump_dir,
+        title_model_name=args.title_model_name,
+        ex_summ_model_name=args.ex_summ_model_name,
+        ledmodel_name=args.ledmodel_name,
+        embedder_name=args.embedder_name,
+        nlp_name=args.nlp_name,
+        similarity_nlp_name=args.similarity_nlp_name,
+        kw_model_name=args.kw_model_name
     )
-    output_zip, survey_file = surveyor.survey(args['query'], max_search=args['max_search'], num_papers=args['num_papers'],
+    output_zip, survey_file = surveyor.survey(args.query, max_search=args.max_search, num_papers=args.num_papers,
                                               debug=False, weigh_authors=False)
 
     print("Survey complete.. \nSurvey file path :" + os.path.abspath(survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))

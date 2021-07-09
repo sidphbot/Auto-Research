@@ -1,5 +1,7 @@
 # defaults for arxiv
 DEFAULTS = {
+    "max_search": 100,
+    "num_papers": 20,
     "pdf_dir": "arxiv_data/tarpdfs/",
     "txt_dir": "arxiv_data/fulltext/",
     "img_dir": "arxiv_data/images/",
