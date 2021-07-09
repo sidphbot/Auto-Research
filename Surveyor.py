@@ -75,7 +75,6 @@ class Surveyor:
         self.similarity_nlp = spacy.load(similarity_nlp_name)
 
         self.kw_model = KeyBERT(kw_model_name)
-        self.kw_model.eval()
         self.define_structure(pdf_dir=pdf_dir, txt_dir=txt_dir, img_dir=img_dir, tab_dir=tab_dir, dump_dir=dump_dir)
 
     def define_structure(self, pdf_dir=None, txt_dir=None, img_dir=None, tab_dir=None, dump_dir=None):
