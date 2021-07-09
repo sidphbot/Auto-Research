@@ -352,6 +352,7 @@ class Surveyor:
         abs_lines += " ".join([l.lower() for l in corpus_known_sections['abstract']])
         abs_lines += research_blocks['abstract']
         # print(abs_lines)
+
         try:
             return self.abstractive_summary(abs_lines)
         except:
