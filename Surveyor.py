@@ -172,6 +172,7 @@ class Surveyor:
 
 
     def fetch_papers(self, dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir, repeat=False):
+        import tempfile
 
         if repeat:
             with tempfile.TemporaryDirectory() as dirpath:
