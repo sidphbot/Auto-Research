@@ -972,6 +972,7 @@ class Surveyor:
                 sort_by=arxiv.SortCriterion.Relevance
             )
         else:
+            id_list = [id for id in id_list if '.' in id]
             search = arxiv.Search(
                 id_list=id_list
             )
@@ -981,23 +982,28 @@ class Surveyor:
         searched_papers = []
 
         for result in results:
-            paper = {
-                'id': urlparse(result.entry_id).path.split('/')[-1].split('v')[0],
-                'title': result.title,
-                'comments': result.comment if result.journal_ref else "None",
-                'journal-ref': result.journal_ref if result.journal_ref else "None",
-                'doi': str(result.doi),
-                'primary_category': result.primary_category,
-                'categories': result.categories,
-                'license': None,
-                'abstract': result.summary,
-                'published': result.published,
-                'pdf_url': result.pdf_url,
-                'links': [str(l) for l in result.links],
-                'update_date': result.updated,
-                'authors': [str(a.name) for a in result.authors],
-            }
-            searched_papers.append(paper)
+            id = urlparse(result.entry_id).path.split('/')[-1].split('v')[0]
+            if '.' in id:
+                paper = {
+                    'id': id,
+                    'title': result.title,
+                    'comments': result.comment if result.journal_ref else "None",
+                    'journal-ref': result.journal_ref if result.journal_ref else "None",
+                    'doi': str(result.doi),
+                    'primary_category': result.primary_category,
+                    'categories': result.categories,
+                    'license': None,
+                    'abstract': result.summary,
+                    'published': result.published,
+                    'pdf_url': result.pdf_url,
+                    'links': [str(l) for l in result.links],
+                    'update_date': result.updated,
+                    'authors': [str(a.name) for a in result.authors],
+                }
+                searched_papers.append(paper)
+            else:
+                print("Paper discarded due to id error [arxiv api bug: #74] :" + result.title)
+
         return results, searched_papers
 
     def download_pdfs(self, papers, pdf_dir):
