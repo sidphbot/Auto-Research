@@ -331,7 +331,8 @@ class Surveyor:
         for p in papers:
             for section in p['sections']:
                 if len(section['highlights']) > 0:
-                    docs.append(self.generate_title(section['highlights']))
+                    title = self.generate_title(section['highlights'])
+                    docs.append(title)
         selected_pids = [p['id'] for p in papers]
         meta_abs = []
         for p in papers_meta:
