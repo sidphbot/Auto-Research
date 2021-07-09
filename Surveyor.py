@@ -52,6 +52,7 @@ class Surveyor:
 
         self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
         self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name).to(self.torch_device)
+        self.title_model.eval()
 
         # summary model
         self.custom_config = AutoConfig.from_pretrained(ex_summ_model_name)
@@ -59,18 +60,22 @@ class Surveyor:
         self.summ_tokenizer = AutoTokenizer.from_pretrained(ex_summ_model_name)
         self.summ_model = AutoModel.from_pretrained(ex_summ_model_name, config=self.custom_config).to(
             self.torch_device)
+        self.summ_model.eval()
         self.model = Summarizer(custom_model=self.summ_model, custom_tokenizer=self.summ_tokenizer)
 
         self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
         self.ledmodel = LEDForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
+        self.ledmodel.eval()
 
         self.embedder = SentenceTransformer(embedder_name)
+        self.embedder.eval()
 
         spacy.require_gpu()
         self.nlp = spacy.load(nlp_name)
         self.similarity_nlp = spacy.load(similarity_nlp_name)
 
         self.kw_model = KeyBERT(kw_model_name)
+        self.kw_model.eval()
         self.define_structure(pdf_dir=pdf_dir, txt_dir=txt_dir, img_dir=img_dir, tab_dir=tab_dir, dump_dir=dump_dir)
 
     def define_structure(self, pdf_dir=None, txt_dir=None, img_dir=None, tab_dir=None, dump_dir=None):
@@ -258,10 +263,13 @@ class Surveyor:
     def build_basic_blocks(self, corpus_known_sections, corpus):
         from pprint import pprint
 
+
         research_blocks = {}
         for head, textarr in corpus_known_sections.items():
+            torch.cuda.empty_cache()
             # print(head.upper())
-            summtext = self.model(" ".join([l.lower() for l in textarr]), ratio=0.5)
+            with torch.no_grad():
+                summtext = self.model(" ".join([l.lower() for l in textarr]), ratio=0.5)
             res = self.nlp(summtext)
             res = [str(sent) for sent in list(res.sents)]
             summtext = ''.join([line for line in res])
@@ -281,10 +289,11 @@ class Surveyor:
         sequences = ledmodel.generate(input_ids, global_attention_mask=global_attention_mask).sequences
         summary = ledtokenizer.batch_decode(sequences)
         '''
-
+        torch.cuda.empty_cache()
         inputs = self.ledtokenizer.prepare_seq2seq_batch(longtext, truncation=True, padding='longest',
                                                          return_tensors='pt').to(self.torch_device)
-        summary_ids = self.ledmodel.generate(**inputs)
+        with torch.no_grad():
+            summary_ids = self.ledmodel.generate(**inputs)
         summary = self.ledtokenizer.batch_decode(summary_ids, skip_special_tokens=True,
                                                  clean_up_tokenization_spaces=True)
 
@@ -338,13 +347,13 @@ class Surveyor:
         from sklearn.cluster import KMeans
         # from bertopic import BERTopic
         # topic_model = BERTopic(embedding_model=embedder)
-
+        torch.cuda.empty_cache()
         abs_lines = self.get_sectioned_docs(papers, papers_meta)
         corpus_embeddings = self.embedder.encode(abs_lines)
         # Normalize the embeddings to unit length
         corpus_embeddings = corpus_embeddings / np.linalg.norm(corpus_embeddings, axis=1, keepdims=True)
-
-        optimal_k = self.model.calculate_optimal_k(' '.join(abs_lines), k_max=10)
+        with torch.no_grad():
+            optimal_k = self.model.calculate_optimal_k(' '.join(abs_lines), k_max=10)
         # Perform kmean clustering
 
         clustering_model = KMeans(n_clusters=optimal_k, n_init=20, n_jobs=-1)
@@ -374,9 +383,12 @@ class Surveyor:
         return self.get_clustered_sections(clustered_sentences), clustered_sentences
 
     def generate_title(self, longtext):
+        torch.cuda.empty_cache()
+
         inputs = self.title_tokenizer.prepare_seq2seq_batch(longtext, truncation=True, padding='longest',
                                                             return_tensors='pt').to(self.torch_device)
-        summary_ids = self.title_model.generate(**inputs)
+        with torch.no_grad():
+            summary_ids = self.title_model.generate(**inputs)
         summary = self.title_tokenizer.batch_decode(summary_ids, skip_special_tokens=True,
                                                     clean_up_tokenization_spaces=True)
 
@@ -524,7 +536,9 @@ class Surveyor:
         return papers_selected
 
     def extractive_summary(self, text):
-        res = self.model(text, ratio=0.5)
+        torch.cuda.empty_cache()
+        with torch.no_grad():
+            res = self.model(text, ratio=0.5)
         res_doc = self.nlp(res)
         return " ".join([str(sent) for sent in list(res_doc.sents)])
 
@@ -532,12 +546,15 @@ class Surveyor:
         # text = " ".join(lines)
         # text_doc = nlp(" ".join([l.lower() for l in lines]))
         # text = ' '.join([ str(sent) for sent in list(text_doc.sents)])
-        res = self.model(" ".join([l.lower() for l in lines]), ratio=0.5, )
+        torch.cuda.empty_cache()
+        with torch.no_grad():
+            res = self.model(" ".join([l.lower() for l in lines]), ratio=0.5, )
         res_doc = self.nlp(res)
         res_lines = [str(sent) for sent in list(res_doc.sents)]
         # print("\n".join(res_sents))
-        keywords = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])), stop_words='english')
-        keyphrases = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])),
+        with torch.no_grad():
+            keywords = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])), stop_words='english')
+            keyphrases = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])),
                                                     keyphrase_ngram_range=(4, 4),
                                                     stop_words='english', use_mmr=True, diversity=0.7)
         return res_lines, keywords, keyphrases
