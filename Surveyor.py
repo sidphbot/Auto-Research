@@ -55,6 +55,8 @@ class Surveyor:
             self.high_gpu = DEFAULTS["high_gpu"]
         else:
             self.high_gpu = high_gpu
+        self.num_papers = DEFAULTS['num_papers']
+        self.max_search = DEFAULTS['max_search']
 
         self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
         self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name).to(self.torch_device)
