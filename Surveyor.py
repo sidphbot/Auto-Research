@@ -30,7 +30,8 @@ class Surveyor:
             embedder_name=None,
             nlp_name=None,
             similarity_nlp_name=None,
-            kw_model_name=None
+            kw_model_name=None,
+            high_gpu=None
     ):
         self.torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print("torch_device: " + self.torch_device)
@@ -49,6 +50,10 @@ class Surveyor:
             similarity_nlp_name = DEFAULTS["similarity_nlp_name"]
         if not kw_model_name:
             kw_model_name = DEFAULTS["kw_model_name"]
+        if not high_gpu:
+            aelf.high_gpu = DEFAULTS["high_gpu"]
+        else:
+            aelf.high_gpu = high_gpu
 
         self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
         self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name).to(self.torch_device)
@@ -331,8 +336,11 @@ class Surveyor:
         for p in papers:
             for section in p['sections']:
                 if len(section['highlights']) > 0:
-                    title = self.generate_title(section['highlights'])
-                    docs.append(title)
+                    if self.high_gpu:
+                        content = self.generate_title(section['highlights'])
+                    else:
+                        content = self.extractive_summary(''.join(section['highlights']))
+                    docs.append(content)
         selected_pids = [p['id'] for p in papers]
         meta_abs = []
         for p in papers_meta:
