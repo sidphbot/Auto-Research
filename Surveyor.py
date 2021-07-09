@@ -132,7 +132,7 @@ class Surveyor:
 
         self.clean_dirs([pdf_dir, txt_dir, img_dir, tab_dir, dump_dir])
 
-        papers = searched_papers[:self.num_papers]
+        papers = papers_meta[:self.num_papers]
         selected_papers = papers
         ids_none, papers, cites = self.fetch_papers(dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir)
         new_papers = papers_meta[self.num_papers : self.num_papers + len(ids_none)]
