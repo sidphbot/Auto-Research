@@ -181,7 +181,7 @@ class Surveyor:
                 self.download_pdfs(papers, dirpath)
                 dirpath_pdfs = os.listdir(dirpath)
                 for file_name in dirpath_pdfs:
-                    full_file_name = os.path.join(src, file_name)
+                    full_file_name = os.path.join(dirpath, file_name)
                     if os.path.isfile(full_file_name):
                         shutil.copy(full_file_name, pdf_dir)
                 print("converting extra pdfs.. ")
