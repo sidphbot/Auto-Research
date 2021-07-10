@@ -34,7 +34,7 @@ class Surveyor:
             similarity_nlp_name=None,
             kw_model_name=None,
             high_gpu=None,
-            refresh_models=False
+            refresh_models=True
     ):
         self.torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print("torch_device: " + self.torch_device)
