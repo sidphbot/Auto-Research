@@ -437,10 +437,10 @@ class Surveyor:
             if p['id'] not in selected_pids:
                 meta_abs.append(self.generate_title(p['abstract']))
         docs.extend(meta_abs)
-        print("meta_abs num"+str(len(meta_abs)))
-        print("selected_pids num"+str(len(selected_pids)))
-        print("papers_meta num"+str(len(papers_meta)))
-        assert (len(meta_abs) + len(selected_pids) == len(papers_meta))
+        #print("meta_abs num"+str(len(meta_abs)))
+        #print("selected_pids num"+str(len(selected_pids)))
+        #print("papers_meta num"+str(len(papers_meta)))
+        #assert (len(meta_abs) + len(selected_pids) == len(papers_meta))
         assert ('str' in str(type(random.sample(docs, 1)[0])))
         return [doc for doc in docs if doc != '']
 
