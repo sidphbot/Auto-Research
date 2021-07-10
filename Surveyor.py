@@ -7,6 +7,7 @@ import spacy
 import numpy as np
 from keybert import KeyBERT
 import shutil, joblib
+from distutils.dir_util import copy_tree
 
 try:
     from transformers import *
