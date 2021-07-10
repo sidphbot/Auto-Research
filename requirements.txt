@@ -7,7 +7,7 @@ pdftotext
 arxiv
 arxiv2bib
 scholarly
-PyMuPDF
+PyMuPDF==1.18.14
 Pillow
 tabula-py
 sentencepiece
