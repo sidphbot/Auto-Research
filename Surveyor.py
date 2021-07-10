@@ -38,9 +38,9 @@ class Surveyor:
             refresh_models=False
     ):
         self.torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        print("torch_device: " + self.torch_device)
+        print("\nTorch_device: " + self.torch_device)
         if 'cuda' in self.torch_device:
-            print("loading spacy for gpu")
+            print("\nloading spacy for gpu")
             spacy.require_gpu()
 
         if not kw_model_name:
@@ -73,6 +73,7 @@ class Surveyor:
             similarity_nlp_name = DEFAULTS["similarity_nlp_name"]
 
         if refresh_models or not models_found:
+            print("\nInitializing and saving models(about 5GB) to " + models_dir)
             self.clean_dirs([models_dir])
 
             self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
@@ -102,6 +103,7 @@ class Surveyor:
             self.embedder.eval()
             self.embedder.save(models_dir + "/embedder")
         else:
+            print("\nInitializing from previously saved models at" + models_dir)
             self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
             self.title_model = AutoModelForSeq2SeqLM.from_pretrained(models_dir + "/title_model").to(self.torch_device)
             self.title_model.eval()
@@ -179,9 +181,11 @@ class Surveyor:
 
         papers = papers_meta[:self.num_papers]
         selected_papers = papers
+        print("\nFirst stage paper collection...")
         ids_none, papers, cites = self.fetch_papers(dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir)
-        print("\nfirst stage paper collection complete, papers collected: \n"+ ', '.join([p['id'] for p in papers]))
+        print("\nFirst stage paper collection complete, papers collected: \n" + ', '.join([p['id'] for p in papers]))
         new_papers = papers_meta[self.num_papers : self.num_papers + len(ids_none)]
+        _ = self.get_freq_cited(cites)
         '''
         filtered_idlist = []
         for c in self.get_freq_cited(cites):
@@ -190,15 +194,16 @@ class Surveyor:
         new_papers.extend(new_searched_papers)
         '''
         selected_papers.extend(new_papers)
+        print("\nSecond stage paper collection...")
         _, new_papers, _ = self.fetch_papers(dump_dir, img_dir, new_papers, pdf_dir, tab_dir, txt_dir, repeat=True)
-        print("\nsecond stage paper collection complete, new papers collected: \n" + ', '.join([p['id'] for p in new_papers]))
+        print("\nSecond stage paper collection complete, new papers collected: \n" + ', '.join([p['id'] for p in new_papers]))
         papers.extend(new_papers)
 
         joblib.dump(papers, dump_dir + 'papers_extracted_pdf_route.dmp')
         copy_tree(img_dir, dump_dir + os.path.basename(img_dir))
         copy_tree(tab_dir, dump_dir + os.path.basename(tab_dir))
 
-        print("extracting section-wise highlights.. ")
+        print("\nExtracting section-wise highlights.. ")
         papers = self.extract_highlights(papers)
 
         return papers, selected_papers
@@ -221,7 +226,7 @@ class Surveyor:
 
         if repeat:
             with tempfile.TemporaryDirectory() as dirpath:
-                print("downloading extra pdfs.. ")
+                print("\n- downloading extra pdfs.. ")
                 # full text preparation of selected papers
                 self.download_pdfs(papers, dirpath)
                 dirpath_pdfs = os.listdir(dirpath)
@@ -229,22 +234,22 @@ class Surveyor:
                     full_file_name = os.path.join(dirpath, file_name)
                     if os.path.isfile(full_file_name):
                         shutil.copy(full_file_name, pdf_dir)
-                print("converting extra pdfs.. ")
+                print("\n- converting extra pdfs.. ")
                 self.convert_pdfs(dirpath, txt_dir)
         else:
-            print("downloading pdfs.. ")
+            print("\n- downloading pdfs.. ")
             # full text preparation of selected papers
             self.download_pdfs(papers, pdf_dir)
-            print("converting pdfs.. ")
+            print("\n- converting pdfs.. ")
             self.convert_pdfs(pdf_dir, txt_dir)
         # plugging citations to our papers object
-        print("plugging in citation network.. ")
+        print("\n- plugging in citation network.. ")
         papers, cites = self.cocitation_network(papers, txt_dir)
         joblib.dump(papers, dump_dir + 'papers_selected_pdf_route.dmp')
         from distutils.dir_util import copy_tree
         copy_tree(txt_dir, dump_dir + os.path.basename(txt_dir))
         copy_tree(pdf_dir, dump_dir + os.path.basename(pdf_dir))
-        print("extracting structure.. ")
+        print("\n- extracting structure.. ")
         papers, ids_none = self.extract_structure(papers, pdf_dir, txt_dir, img_dir, dump_dir, tab_dir)
         return ids_none, papers, cites
 
@@ -274,11 +279,11 @@ class Surveyor:
     def build_doc(self, research_sections, papers, query=None, filename='survey.txt'):
 
         import arxiv2bib
-        print("building bibliography entries.. ")
+        print("\nbuilding bibliography entries.. ")
         bibentries = arxiv2bib.arxiv2bib([p['id'] for p in papers])
         bibentries = [r.bibtex() for r in bibentries]
 
-        print("building final survey file .. ")
+        print("\nbuilding final survey file .. at "+ filename)
         file = open(filename, 'w+')
         if query is None:
             query = 'Internal(existing) research'
@@ -390,7 +395,7 @@ class Surveyor:
         summary = self.ledtokenizer.batch_decode(summary_ids, skip_special_tokens=True,
                                                  clean_up_tokenization_spaces=True)
 
-        print("abstractive summary type:" + str(type(summary)))
+        #print("abstractive summary type:" + str(type(summary)))
         return summary[0]
 
     def get_abstract(self, abs_lines, corpus_known_sections, research_blocks):
@@ -416,7 +421,7 @@ class Surveyor:
             abstext = k + '. ' + v.replace('\n', ' ')
             abstext = self.nlp(abstext)
             abs_lines.extend([str(sent).lower() for sent in list(abstext.sents)])
-        print("unique corpus value types:" + str(types))
+        #print("unique corpus value types:" + str(types))
         # abs_lines = '\n'.join([str(sent) for sent in abs_lines.sents])
         return abs_lines
 
@@ -615,9 +620,9 @@ class Surveyor:
             print("corpus item: " + str(self.get_by_pid(id, papers)['title']))
 
         idx = np.argsort(scores)[:num_papers]
-        for i in range(len(scores)):
-            print("paper: " + str(self.get_by_pid(pids[i], papers)['title']))
-            print("score: " + str(scores[i]))
+        #for i in range(len(scores)):
+        #    print("paper: " + str(self.get_by_pid(pids[i], papers)['title']))
+        #    print("score: " + str(scores[i]))
         # print("argsort ids("+str(num_papers)+" papers): "+ str(idx))
         idx = [pids[i] for i in idx]
         # print("argsort pids("+str(num_papers)+" papers): "+ str(idx))
@@ -678,14 +683,14 @@ class Surveyor:
         return papers
 
     def extract_structure(self, papers, pdf_dir, txt_dir, img_dir, dump_dir, tab_dir, tables=False):
-        print("extracting sections.. ")
+        print("\nextracting sections.. ")
         papers, ids_none = self.extract_parts(papers, txt_dir, dump_dir)
 
-        print("extracting images.. for future correlation use-cases ")
+        print("\nextracting images.. for future correlation use-cases ")
         papers = self.extract_images(papers, pdf_dir, img_dir)
 
         if tables:
-            print("extracting tables.. for future correlation use-cases ")
+            print("\nextracting tables.. for future correlation use-cases ")
             papers = self.extract_tables(papers, pdf_dir, tab_dir)
 
         return papers, ids_none
@@ -711,11 +716,13 @@ class Surveyor:
 
         ids_none = {i: h for i, h in headings_all.items() if len(h) < 3}
 
+        '''
         for f, h in headings_all.items():
             if len(h) < 4:
                 print("=================headings almost undetected================")
                 print(f)
                 print(h)
+        '''
         # from pprint import pprint
         # pprint({f: len(h) for f,h in headings_all.items()})
         papers_none = [p for p in papers if p['id'] in ids_none]
@@ -943,7 +950,7 @@ class Surveyor:
         for p in papers:
             if p['id'] == pid:
                 return p
-        print("paper not found by file, \nfile: "+file+"\nall papers: "+', '.join([p['id'] for p in papers]))
+        print("\npaper not found by file, \nfile: "+file+"\nall papers: "+', '.join([p['id'] for p in papers]))
 
 
     def alpha_length(self, s):
@@ -1068,7 +1075,7 @@ class Surveyor:
         import arxiv
         from urllib.parse import urlparse
         ids = [p['id'] for p in papers]
-        print("downloading below selected papers: ")
+        print("\ndownloading below selected papers: ")
         print(ids)
         # asert(False)
         papers_filtered = arxiv.Search(id_list=ids).get()
@@ -1111,7 +1118,7 @@ class Surveyor:
         from arxiv_public_data import internal_citations
 
         cites = internal_citations.citation_list_parallel(N=multiprocessing.cpu_count(), directory=txt_dir)
-        print("citation-network: ")
+        print("\ncitation-network: ")
         print(cites)
 
         for p in papers:
@@ -1226,9 +1233,10 @@ class Surveyor:
         if not num_papers:
             num_papers = DEFAULTS['num_papers']
         # arxiv api relevance search and data preparation
+        print("\nsearching arXiv for top 100 papers.. ")
         results, searched_papers = self.search(query, max_search=max_search)
         joblib.dump(searched_papers, self.dump_dir + 'papers_metadata.dmp')
-        print("found " + str(len(searched_papers)) + " papers")
+        print("\nfound " + str(len(searched_papers)) + " papers")
 
         # paper selection by scibert vector embedding relevance scores
         # papers_selected = select_papers(searched_papers, query, num_papers=num_papers)
@@ -1241,23 +1249,23 @@ class Surveyor:
 
         joblib.dump(papers_highlighted, self.dump_dir + 'papers_highlighted.dmp')
 
-        print("standardizing known section headings per paper.. ")
+        print("\nStandardizing known section headings per paper.. ")
         papers_standardized = self.standardize_headings(papers_highlighted)
         joblib.dump(papers_standardized, self.dump_dir + 'papers_standardized.dmp')
 
-        print("building paper-wise corpus.. ")
+        print("\nBuilding paper-wise corpus.. ")
         corpus = self.build_corpus(papers_highlighted, searched_papers)
         joblib.dump(corpus, self.dump_dir + 'corpus.dmp')
 
-        print("building section-wise corpus.. ")
+        print("\nBuilding section-wise corpus.. ")
         corpus_sectionwise = self.build_corpus_sectionwise(papers_standardized)
         joblib.dump(corpus_sectionwise, self.dump_dir + 'corpus_sectionwise.dmp')
 
-        print("building basic research highlights.. ")
+        print("\nBuilding basic research highlights.. ")
         research_blocks = self.build_basic_blocks(corpus_sectionwise, corpus)
         joblib.dump(research_blocks, self.dump_dir + 'research_blocks.dmp')
 
-        print("reducing corpus to lines.. ")
+        print("\nReducing corpus to lines.. ")
         corpus_lines = self.get_corpus_lines(corpus)
         joblib.dump(corpus_lines, self.dump_dir + 'corpus_lines.dmp')
 
@@ -1291,7 +1299,7 @@ class Surveyor:
         '''
         # print("corpus types:"+ str(np.unique([type(txt) for k,txt in corpus.items()])))
 
-        print("building abstract.. ")
+        print("\nBuilding abstract.. ")
         abstract_block = self.get_abstract(corpus_lines, corpus_sectionwise, research_blocks)
         joblib.dump(abstract_block, self.dump_dir + 'abstract_block.dmp')
         '''
@@ -1300,7 +1308,7 @@ class Surveyor:
         print(abstract_block)
         '''
 
-        print("building introduction.. ")
+        print("\nBuilding introduction.. ")
         intro_block = self.get_intro(corpus_sectionwise, research_blocks)
         joblib.dump(intro_block, self.dump_dir + 'intro_block.dmp')
         '''
@@ -1308,7 +1316,7 @@ class Surveyor:
         print("intro_block:")
         print(intro_block)
         '''
-        print("building custom sections.. ")
+        print("\nBuilding custom sections.. ")
         clustered_sections, clustered_sentences = self.get_clusters(papers_standardized, searched_papers)
         joblib.dump(clustered_sections, self.dump_dir + 'clustered_sections.dmp')
         joblib.dump(clustered_sentences, self.dump_dir + 'clustered_sentences.dmp')
@@ -1326,7 +1334,7 @@ class Surveyor:
         clustered_sections['introduction'] = intro_block
         joblib.dump(clustered_sections, self.dump_dir + 'research_sections.dmp')
 
-        print("building conclusion.. ")
+        print("\nBuilding conclusion.. ")
         conclusion_block = self.get_conclusion(clustered_sections)
         joblib.dump(conclusion_block, self.dump_dir + 'conclusion_block.dmp')
         clustered_sections['conclusion'] = conclusion_block
@@ -1340,12 +1348,11 @@ class Surveyor:
         self.build_doc(clustered_sections, papers_standardized, query=query, filename=self.dump_dir + survey_file)
 
         shutil.copytree('arxiv_data/', self.dump_dir + '/arxiv_data/')
-
         shutil.copy(self.dump_dir + survey_file, survey_file)
         assert (os.path.exists(survey_file))
         output_zip = self.zip_outputs(self.dump_dir, query)
-        print("Survey complete.. \nSurvey file path :" + os.path.abspath(
-            survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))
+        print("\nSurvey complete.. \nSurvey file path :" + os.path.abspath(
+            survey_file) + "\nAll outputs zip path :" + os.path.abspath(self.dump_dir + output_zip))
 
         return zipf, survey_file
 
@@ -1400,7 +1407,7 @@ if __name__ == '__main__':
         similarity_nlp_name=args.similarity_nlp_name,
         kw_model_name=args.kw_model_name
     )
-    output_zip, survey_file = surveyor.survey(args.query, max_search=args.max_search, num_papers=args.num_papers,
+
+    surveyor.survey(args.query, max_search=args.max_search, num_papers=args.num_papers,
                                               debug=False, weigh_authors=False)
 
-    print("Survey complete.. \nSurvey file path :" + os.path.abspath(survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))
