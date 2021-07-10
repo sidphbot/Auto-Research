@@ -102,14 +102,14 @@ class Surveyor:
 
 
             self.nlp = spacy.load(nlp_name)
-            config = nlp.config
-            bytes_data = nlp.to_bytes()
+            config = self.nlp.config
+            bytes_data = self.nlp.to_bytes()
             joblib.dump(config, "nlp_config.dump")
             joblib.dump(bytes_data, "nlp_bytes_data.dump")
 
             self.similarity_nlp = spacy.load(similarity_nlp_name)
-            config = similarity_nlp.config
-            bytes_data = similarity_nlp.to_bytes()
+            config = self.similarity_nlp.config
+            bytes_data = self.similarity_nlp.to_bytes()
             joblib.dump(config, "similarity_nlp_config.dump")
             joblib.dump(bytes_data, "similarity_nlp_bytes_data.dump")
         else:
