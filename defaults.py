@@ -8,6 +8,7 @@ DEFAULTS = {
     "img_dir": "arxiv_data/images/",
     "tab_dir": "arxiv_data/tables/",
     "dump_dir": "arxiv_dumps/",
+    "models_dir": "/kaggle/working/saved_models/",
     "title_model_name": "Callidior/bert2bert-base-arxiv-titlegen",
     "ex_summ_model_name": "allenai/scibert_scivocab_uncased",
     "ledmodel_name": "allenai/led-large-16384-arxiv",

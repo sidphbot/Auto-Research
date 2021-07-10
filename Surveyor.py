@@ -25,6 +25,7 @@ class Surveyor:
             img_dir=None,
             tab_dir=None,
             dump_dir=None,
+            models_dir=None,
             title_model_name=None,
             ex_summ_model_name=None,
             ledmodel_name=None,
@@ -32,23 +33,15 @@ class Surveyor:
             nlp_name=None,
             similarity_nlp_name=None,
             kw_model_name=None,
-            high_gpu=None
+            high_gpu=None,
+            refresh_models=False
     ):
         self.torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print("torch_device: " + self.torch_device)
+        if 'cuda' in self.torch_device:
+            print("loading spacy for gpu")
+            spacy.require_gpu()
 
-        if not title_model_name:
-            title_model_name = DEFAULTS["title_model_name"]
-        if not ex_summ_model_name:
-            ex_summ_model_name = DEFAULTS["ex_summ_model_name"]
-        if not ledmodel_name:
-            ledmodel_name = DEFAULTS["ledmodel_name"]
-        if not embedder_name:
-            embedder_name = DEFAULTS["embedder_name"]
-        if not nlp_name:
-            nlp_name = DEFAULTS["nlp_name"]
-        if not similarity_nlp_name:
-            similarity_nlp_name = DEFAULTS["similarity_nlp_name"]
         if not kw_model_name:
             kw_model_name = DEFAULTS["kw_model_name"]
         if not high_gpu:
@@ -58,31 +51,98 @@ class Surveyor:
         self.num_papers = DEFAULTS['num_papers']
         self.max_search = DEFAULTS['max_search']
 
-        self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
-        self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name).to(self.torch_device)
-        self.title_model.eval()
+        if refresh_models or len(os.listdir(models_dir)) < 10:
+            clean_dirs([models_dir])
+            if not title_model_name:
+                title_model_name = DEFAULTS["title_model_name"]
+            if not ex_summ_model_name:
+                ex_summ_model_name = DEFAULTS["ex_summ_model_name"]
+            if not ledmodel_name:
+                ledmodel_name = DEFAULTS["ledmodel_name"]
+            if not embedder_name:
+                embedder_name = DEFAULTS["embedder_name"]
+            if not nlp_name:
+                nlp_name = DEFAULTS["nlp_name"]
+            if not similarity_nlp_name:
+                similarity_nlp_name = DEFAULTS["similarity_nlp_name"]
 
-        # summary model
-        self.custom_config = AutoConfig.from_pretrained(ex_summ_model_name)
-        self.custom_config.output_hidden_states = True
-        self.summ_tokenizer = AutoTokenizer.from_pretrained(ex_summ_model_name)
-        self.summ_model = AutoModel.from_pretrained(ex_summ_model_name, config=self.custom_config).to(
-            self.torch_device)
-        self.summ_model.eval()
-        self.model = Summarizer(custom_model=self.summ_model, custom_tokenizer=self.summ_tokenizer)
+            self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
+            self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name).to(self.torch_device)
+            self.title_model.eval()
+            self.title_model.save_pretrained(models_dir + "/title_model")
+            self.title_tokenizer.save_pretrained(models_dir + "/title_tokenizer")
 
-        self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
-        self.ledmodel = LEDForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
-        self.ledmodel.eval()
+            # summary model
+            self.custom_config = AutoConfig.from_pretrained(ex_summ_model_name)
+            self.custom_config.output_hidden_states = True
+            self.summ_tokenizer = AutoTokenizer.from_pretrained(ex_summ_model_name)
+            self.summ_model = AutoModel.from_pretrained(ex_summ_model_name, config=self.custom_config).to(
+                self.torch_device)
+            self.summ_model.eval()
+            self.summ_model.save_pretrained(models_dir + "/summ_model")
+            self.summ_tokenizer.save_pretrained(models_dir + "/summ_tokenizer")
+            self.model = Summarizer(custom_model=self.summ_model, custom_tokenizer=self.summ_tokenizer)
 
-        self.embedder = SentenceTransformer(embedder_name)
-        self.embedder.eval()
+            self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
+            self.ledmodel = LEDForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
+            self.ledmodel.eval()
+            self.ledmodel.save_pretrained(models_dir + "/ledmodel")
+            self.ledtokenizer.save_pretrained(models_dir + "/ledtokenizer")
 
-        spacy.require_gpu()
-        self.nlp = spacy.load(nlp_name)
-        self.similarity_nlp = spacy.load(similarity_nlp_name)
+            self.embedder = SentenceTransformer(embedder_name)
+            self.embedder.eval()
+            self.embedder.save_pretrained(models_dir + "/embedder")
+
+
+            self.nlp = spacy.load(nlp_name)
+            config = nlp.config
+            bytes_data = nlp.to_bytes()
+            joblib.dump(config, "nlp_config.dump")
+            joblib.dump(bytes_data, "nlp_bytes_data.dump")
+
+            self.similarity_nlp = spacy.load(similarity_nlp_name)
+            config = similarity_nlp.config
+            bytes_data = similarity_nlp.to_bytes()
+            joblib.dump(config, "similarity_nlp_config.dump")
+            joblib.dump(bytes_data, "similarity_nlp_bytes_data.dump")
+        else:
+            self.title_tokenizer = AutoTokenizer.from_pretrained(models_dir + "/title_tokenizer")
+            self.title_model = AutoModelForSeq2SeqLM.from_pretrained(models_dir + "/title_model").to(self.torch_device)
+            self.title_model.eval()
+
+            # summary model
+            #self.summ_config = AutoConfig.from_pretrained(ex_summ_model_name)
+            #self.summ_config.output_hidden_states = True
+            self.summ_tokenizer = AutoTokenizer.from_pretrained(models_dir + "/summ_tokenizer")
+            self.summ_model = AutoModel.from_pretrained(models_dir + "/summ_model").to(
+                self.torch_device)
+            self.summ_model.eval()
+            self.model = Summarizer(custom_model=self.summ_model, custom_tokenizer=self.summ_tokenizer)
+
+            self.ledtokenizer = LEDTokenizer.from_pretrained(models_dir + "/ledmodel")
+            self.ledmodel = LEDForConditionalGeneration.from_pretrained(models_dir + "/ledtokenizer").to(self.torch_device)
+            self.ledmodel.eval()
+
+            self.embedder = SentenceTransformer(models_dir + "/embedder")
+            self.embedder.eval()
+
+
+            config = joblib.load("nlp_config.dump")
+            bytes_data = joblib.load("nlp_bytes_data.dump")
+            lang_cls = spacy.util.get_lang_class(config["nlp"]["lang"])
+            self.nlp = lang_cls.from_config(config)
+            self.nlp.from_bytes(bytes_data)
+
+            similarity_config = joblib.load("similarity_nlp_config.dump")
+            similarity_bytes_data = joblib.load("similarity_nlp_bytes_data.dump")
+            lang_cls = spacy.util.get_lang_class(similarity_config["nlp"]["lang"])
+            self.nlp = lang_cls.from_config(similarity_config)
+            self.nlp.from_bytes(similarity_bytes_data)
+
+
 
         self.kw_model = KeyBERT(kw_model_name)
+
         self.define_structure(pdf_dir=pdf_dir, txt_dir=txt_dir, img_dir=img_dir, tab_dir=tab_dir, dump_dir=dump_dir)
 
     def define_structure(self, pdf_dir=None, txt_dir=None, img_dir=None, tab_dir=None, dump_dir=None):
