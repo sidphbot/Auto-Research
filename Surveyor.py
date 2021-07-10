@@ -1343,7 +1343,7 @@ class Surveyor:
 
         shutil.copy(self.dump_dir + survey_file, survey_file)
         assert (os.path.exists(survey_file))
-        zipf = self.zip_outputs(self.dump_dir, query)
+        output_zip = self.zip_outputs(self.dump_dir, query)
         print("Survey complete.. \nSurvey file path :" + os.path.abspath(
             survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))
 
