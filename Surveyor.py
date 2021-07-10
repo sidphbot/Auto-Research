@@ -52,7 +52,7 @@ class Surveyor:
         self.max_search = DEFAULTS['max_search']
 
         if refresh_models or len(os.listdir(models_dir)) < 10:
-            clean_dirs([models_dir])
+            self.clean_dirs([models_dir])
             if not title_model_name:
                 title_model_name = DEFAULTS["title_model_name"]
             if not ex_summ_model_name:
