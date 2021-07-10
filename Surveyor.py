@@ -50,6 +50,8 @@ class Surveyor:
             self.high_gpu = high_gpu
         self.num_papers = DEFAULTS['num_papers']
         self.max_search = DEFAULTS['max_search']
+        if not models_dir:
+            models_dir = DEFAULTS['models_dir']
 
         if refresh_models or len(os.listdir(models_dir)) < 10:
             self.clean_dirs([models_dir])
