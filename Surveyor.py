@@ -137,6 +137,7 @@ class Surveyor:
         papers = papers_meta[:self.num_papers]
         selected_papers = papers
         ids_none, papers, cites = self.fetch_papers(dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir)
+        print("\nfirst stage paper collection complete, papers collected: \n"+ ', '.join([p['id'] for p in papers]))
         new_papers = papers_meta[self.num_papers : self.num_papers + len(ids_none)]
         '''
         filtered_idlist = []
@@ -147,6 +148,7 @@ class Surveyor:
         '''
         selected_papers.extend(new_papers)
         _, new_papers, _ = self.fetch_papers(dump_dir, img_dir, new_papers, pdf_dir, tab_dir, txt_dir, repeat=True)
+        print("\nsecond stage paper collection complete, new papers collected: \n" + ', '.join([p['id'] for p in new_papers]))
         papers.extend(new_papers)
 
         joblib.dump(papers, dump_dir + 'papers_extracted_pdf_route.dmp')
