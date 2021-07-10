@@ -53,7 +53,12 @@ class Surveyor:
         if not models_dir:
             models_dir = DEFAULTS['models_dir']
 
-        if refresh_models or len(os.listdir(models_dir)) < 10:
+        models_found = False
+        if os.path.exists(models_dir):
+            if len(os.listdir(models_dir)) > 10:
+                models_found = True
+
+        if refresh_models or not models_found:
             self.clean_dirs([models_dir])
             if not title_model_name:
                 title_model_name = DEFAULTS["title_model_name"]
