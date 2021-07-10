@@ -1340,8 +1340,9 @@ class Surveyor:
         self.build_doc(clustered_sections, papers_standardized, query=query, filename=self.dump_dir + survey_file)
 
         shutil.copytree('arxiv_data/', self.dump_dir + '/arxiv_data/')
+
+        shutil.copy(self.dump_dir + survey_file, survey_file)
         assert (os.path.exists(survey_file))
-        shutil.copy(survey_file, self.dump_dir + survey_file)
         zipf = self.zip_outputs(self.dump_dir, query)
         print("Survey complete.. \nSurvey file path :" + os.path.abspath(
             survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))
