@@ -939,6 +939,8 @@ class Surveyor:
         for p in papers:
             if p['id'] == pid:
                 return p
+        print("paper not found by file, \nfile: "+file+"\nall papers: "+', '.join([p['id'] for p in papers]))
+
 
     def alpha_length(self, s):
         # numbers = sum(c.isdigit() for c in s)
