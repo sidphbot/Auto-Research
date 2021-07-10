@@ -716,6 +716,7 @@ class Surveyor:
         # pprint({f: len(h) for f,h in headings_all.items()})
         papers_none = [p for p in papers if p['id'] in ids_none]
         for p in papers_none:
+            os.remove(txt_dir + '/'+ p['id'] + '.txt')
             papers.remove(p)
 
         return papers, ids_none
