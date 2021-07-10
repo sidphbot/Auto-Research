@@ -693,13 +693,13 @@ class Surveyor:
         headings_all = {}
         # refined = []
         # model = build_summarizer()
-        for file in glob.glob(txt_dir + '/*.txt'):
+        #for file in glob.glob(txt_dir + '/*.txt'):
+        for p in papers:
+            file = txt_dir + '/'+ p['id'] +'.txt'
             refined, headings_extracted = self.extract_headings(file)
             sections = self.extract_sections(headings_extracted, refined)
             # highlights = {k: extract_highlights(model,v) for k, v in sections.items()}
-            p = self.get_by_file(file, papers)
-            if not p:
-                print("paper not found by text file:" + file)
+            #p = self.get_by_file(file, papers)
             if len(headings_extracted) > 3:
                 p['body_text'] = sections
             # p['body_highlights'] = highlights
