@@ -1336,12 +1336,12 @@ class Surveyor:
         print(conclusion_block)
         '''
 
-        survey_file = self.dump_dir + 'A_Survey_on_' + query.replace(' ', '_') + '.txt'
-        self.build_doc(clustered_sections, papers_standardized, query=query, filename=survey_file)
+        survey_file = 'A_Survey_on_' + query.replace(' ', '_') + '.txt'
+        self.build_doc(clustered_sections, papers_standardized, query=query, filename=self.dump_dir + survey_file)
 
         shutil.copytree('arxiv_data/', self.dump_dir + '/arxiv_data/')
         assert (os.path.exists(survey_file))
-        shutil.copy(survey_file, self.dump_dir + '/' + survey_file)
+        shutil.copy(survey_file, self.dump_dir + survey_file)
         zipf = self.zip_outputs(self.dump_dir, query)
         print("Survey complete.. \nSurvey file path :" + os.path.abspath(
             survey_file) + "\nAll outputs zip path :" + os.path.abspath(output_zip))
