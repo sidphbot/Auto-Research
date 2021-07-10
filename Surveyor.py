@@ -128,7 +128,7 @@ class Surveyor:
             self.model = Summarizer(custom_model=self.summ_model, custom_tokenizer=self.summ_tokenizer)
 
             self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
-            self.ledmodel = LEDForConditionalGeneration.from_pretrained(models_dir + "/ledtmodel").to(self.torch_device)
+            self.ledmodel = LEDForConditionalGeneration.from_pretrained(models_dir + "/ledmodel").to(self.torch_device)
             self.ledmodel.eval()
 
             self.embedder = SentenceTransformer(models_dir + "/embedder")
