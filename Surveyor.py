@@ -98,7 +98,7 @@ class Surveyor:
 
             self.embedder = SentenceTransformer(embedder_name)
             self.embedder.eval()
-            self.embedder.save_pretrained(models_dir + "/embedder")
+            self.embedder.save(models_dir + "/embedder")
 
 
             self.nlp = spacy.load(nlp_name)
