@@ -19,6 +19,12 @@ from defaults import DEFAULTS
 
 
 class Surveyor:
+    '''
+    A class to abstract all nlp and data mining helper functions as well as workflows
+    required to generate the survey from a single query, with absolute configurability
+    '''
+
+
     def __init__(
             self,
             pdf_dir=None,
@@ -37,6 +43,30 @@ class Surveyor:
             high_gpu=None,
             refresh_models=False
     ):
+        '''
+        Initializes models and directory structure for the surveyor
+
+        Optional Params:
+            - pdf_dir: String, pdf paper storage directory - defaults to arxiv_data/tarpdfs/
+            - txt_dir: String, text-converted paper storage directory - defaults to arxiv_data/fulltext/
+            - img_dir: String, image image storage directory - defaults to arxiv_data/images/
+            - tab_dir: String, tables storage directory - defaults to arxiv_data/tables/
+            - dump_dir: String, all_output_dir - defaults to arxiv_dumps/
+            - models_dir: String, directory to save to huge models
+            - title_model_name: String, title model name/tag in hugging-face, defaults to `Callidior/bert2bert-base-arxiv-titlegen`
+            - ex_summ_model_name: String, extractive summary model name/tag in hugging-face, defaults to `allenai/scibert_scivocab_uncased`
+            - ledmodel_name: String, led model(for abstractive summary) name/tag in hugging-face, defaults to `allenai/led-large-16384-arxiv`
+            - embedder_name: String, sentence embedder name/tag in hugging-face, defaults to `paraphrase-MiniLM-L6-v2`
+            - nlp_name: String, spacy model name/tag in hugging-face (if changed - needs to be spacy-installed prior), defaults to `en_core_sci_scibert`
+            - similarity_nlp_name: String, spacy downstream trained model(for similarity) name/tag in hugging-face (if changed - needs to be spacy-installed prior), defaults to `en_core_sci_lg`
+            - kw_model_name: String, keyword extraction model name/tag in hugging-face, defaults to `distilbert-base-nli-mean-tokens`
+            - high_gpu: Bool, High GPU usage permitted, defaults to False
+            - refresh_models: Bool, Refresh model downloads with given names (needs atleast one model name param above), defaults to False
+
+            - max_search: int maximium number of papers to gaze at - defaults to 100
+            - num_papers: int maximium number of papers to download and analyse - defaults to 25
+
+        '''
         self.torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print("\nTorch_device: " + self.torch_device)
         if 'cuda' in self.torch_device:
@@ -1364,33 +1394,33 @@ if __name__ == '__main__':
     parser.add_argument('query', metavar='query_string', type=str,
                         help='your research query/keywords')
     parser.add_argument('--max_search', metavar='max_metadata_papers', type=int, default=None,
-                        help='maximium number of papers to gaze at (currently best to keep it to 100)')
+                        help='maximium number of papers to gaze at - defaults to 100')
     parser.add_argument('--num_papers', metavar='max_num_papers', type=int, default=None,
-                        help='maximium number of papers to download and analyse')
+                        help='maximium number of papers to download and analyse - defaults to 25')
     parser.add_argument('--pdf_dir', metavar='pdf_dir', type=str, default=None,
-                        help='pdf paper storage directory')
+                        help='pdf paper storage directory - defaults to arxiv_data/tarpdfs/')
     parser.add_argument('--txt_dir', metavar='txt_dir', type=str, default=None,
-                        help='text-converted paper storage directory')
+                        help='text-converted paper storage directory - defaults to arxiv_data/fulltext/')
     parser.add_argument('--img_dir', metavar='img_dir', type=str, default=None,
-                        help='image storage directory')
+                        help='image storage directory - defaults to arxiv_data/images/')
     parser.add_argument('--tab_dir', metavar='tab_dir', type=str, default=None,
-                        help='tables storage directory')
+                        help='tables storage directory - defaults to arxiv_data/tables/')
     parser.add_argument('--dump_dir', metavar='dump_dir', type=str, default=None,
-                        help='python joblib intermediate results(highlights/corpus) dump storage directory')
+                        help='all_output_dir - defaults to arxiv_dumps/')
     parser.add_argument('--title_model_name', metavar='title_model_name', type=str, default=None,
-                        help='title model name/tag in hugging-face, defaults to \'\'')
+                        help='title model name/tag in hugging-face, defaults to \'Callidior/bert2bert-base-arxiv-titlegen\'')
     parser.add_argument('--ex_summ_model_name', metavar='extractive_summ_model_name', type=str, default=None,
-                        help='extractive summary model name/tag in hugging-face, defaults to \'\'')
+                        help='extractive summary model name/tag in hugging-face, defaults to \'allenai/scibert_scivocab_uncased\'')
     parser.add_argument('--ledmodel_name', metavar='ledmodel_name', type=str, default=None,
-                        help='led model(for abstractive summary) name/tag in hugging-face, defaults to \'\'')
+                        help='led model(for abstractive summary) name/tag in hugging-face, defaults to \'allenai/led-large-16384-arxiv\'')
     parser.add_argument('--embedder_name', metavar='sentence_embedder_name', type=str, default=None,
-                        help='sentence embedder name/tag in hugging-face, defaults to \'\'')
+                        help='sentence embedder name/tag in hugging-face, defaults to \'paraphrase-MiniLM-L6-v2\'')
     parser.add_argument('--nlp_name', metavar='spacy_model_name', type=str, default=None,
-                        help='spacy model name/tag in hugging-face, defaults to \'\'')
+                        help='spacy model name/tag in hugging-face (if changed - needs to be spacy-installed prior), defaults to \'en_core_sci_scibert\'')
     parser.add_argument('--similarity_nlp_name', metavar='similarity_nlp_name', type=str, default=None,
-                        help='spacy downstream model(for similarity) name/tag in hugging-face, defaults to \'\'')
+                        help='spacy downstream model(for similarity) name/tag in hugging-face (if changed - needs to be spacy-installed prior), defaults to \'en_core_sci_lg\'')
     parser.add_argument('--kw_model_name', metavar='kw_model_name', type=str, default=None,
-                        help='keyword extraction model name/tag in hugging-face, defaults to \'\'')
+                        help='keyword extraction model name/tag in hugging-face, defaults to \'distilbert-base-nli-mean-tokens\'')
 
     args = parser.parse_args()
     surveyor = Surveyor(
