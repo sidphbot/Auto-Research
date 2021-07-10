@@ -654,6 +654,8 @@ class Surveyor:
             sections = self.extract_sections(headings_extracted, refined)
             # highlights = {k: extract_highlights(model,v) for k, v in sections.items()}
             p = self.get_by_file(file, papers)
+            if not p:
+                print("paper not found by text file:" + file)
             if len(headings_extracted) > 3:
                 p['body_text'] = sections
             # p['body_highlights'] = highlights
