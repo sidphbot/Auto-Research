@@ -104,14 +104,14 @@ class Surveyor:
             self.nlp = spacy.load(nlp_name)
             config = self.nlp.config
             bytes_data = self.nlp.to_bytes()
-            joblib.dump(config, "nlp_config.dump")
-            joblib.dump(bytes_data, "nlp_bytes_data.dump")
+            joblib.dump(config, models_dir + "nlp_config.dump")
+            joblib.dump(bytes_data, models_dir + "nlp_bytes_data.dump")
 
             self.similarity_nlp = spacy.load(similarity_nlp_name)
             config = self.similarity_nlp.config
             bytes_data = self.similarity_nlp.to_bytes()
-            joblib.dump(config, "similarity_nlp_config.dump")
-            joblib.dump(bytes_data, "similarity_nlp_bytes_data.dump")
+            joblib.dump(config, models_dir + "similarity_nlp_config.dump")
+            joblib.dump(bytes_data, models_dir + "similarity_nlp_bytes_data.dump")
         else:
             self.title_tokenizer = AutoTokenizer.from_pretrained(models_dir + "/title_tokenizer")
             self.title_model = AutoModelForSeq2SeqLM.from_pretrained(models_dir + "/title_model").to(self.torch_device)
@@ -134,14 +134,14 @@ class Surveyor:
             self.embedder.eval()
 
 
-            config = joblib.load("nlp_config.dump")
-            bytes_data = joblib.load("nlp_bytes_data.dump")
+            config = joblib.load(models_dir + "nlp_config.dump")
+            bytes_data = joblib.load(models_dir + "nlp_bytes_data.dump")
             lang_cls = spacy.util.get_lang_class(config["nlp"]["lang"])
             self.nlp = lang_cls.from_config(config)
             self.nlp.from_bytes(bytes_data)
 
-            similarity_config = joblib.load("similarity_nlp_config.dump")
-            similarity_bytes_data = joblib.load("similarity_nlp_bytes_data.dump")
+            similarity_config = joblib.load(models_dir + "similarity_nlp_config.dump")
+            similarity_bytes_data = joblib.load(models_dir + "similarity_nlp_bytes_data.dump")
             lang_cls = spacy.util.get_lang_class(similarity_config["nlp"]["lang"])
             self.nlp = lang_cls.from_config(similarity_config)
             self.nlp.from_bytes(similarity_bytes_data)
