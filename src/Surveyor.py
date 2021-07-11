@@ -1428,7 +1428,7 @@ class Surveyor:
 
         return os.path.abspath(self.dump_dir + output_zip), os.path.abspath(survey_file)
 
-'''
+
 if __name__ == '__main__':
     import argparse
 
@@ -1471,7 +1471,7 @@ if __name__ == '__main__':
                         help='High GPU usage permitted, defaults to False')
 
     args = parser.parse_args()
-    print(args)
+
     surveyor = Surveyor(
         pdf_dir=args.pdf_dir,
         txt_dir=args.txt_dir,
@@ -1493,4 +1493,4 @@ if __name__ == '__main__':
 
     surveyor.survey(args.query, max_search=args.max_search, num_papers=args.num_papers,
                                               debug=False, weigh_authors=False)
-'''
+
