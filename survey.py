@@ -40,8 +40,9 @@ if __name__ == '__main__':
                         help='Refresh model downloads with given names (needs atleast one model name param above), defaults to False')
     parser.add_argument('--high_gpu', metavar='high_gpu', type=str, default=None,
                         help='High GPU usage permitted, defaults to False')
-
+    print(parser)
     args = parser.parse_args()
+    print(args)
     surveyor = Surveyor(
         pdf_dir=args.pdf_dir,
         txt_dir=args.txt_dir,
