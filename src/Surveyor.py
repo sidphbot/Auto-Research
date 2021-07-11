@@ -323,10 +323,20 @@ class Surveyor:
         print("")
         print("----------------------------------------------------------------------")
         print("Title: A survey on " + query)
-        file.write("Author: Open Research Assistant (sidphbot@github) - Sidharth Pal")
-        print("Author: Open Research Assistant (sidphbot@github) - Sidharth Pal")
-        file.write("Disclaimer: The Survey is Machine-Generated, hence please expect accordingly")
-        print("Disclaimer: The Survey is Machine-Generated, hence please expect accordingly")
+        file.write("Author: Auto-Research (github.com/sidphbot/Auto-Research)")
+        print("Author: Auto-Research (github.com/sidphbot/Auto-Research)")
+        file.write("Dev: Auto-Research (github.com/sidphbot/Auto-Research)")
+        print("Dev: Auto-Research (github.com/sidphbot/Auto-Research)")
+        file.write("Disclaimer: This survey is intended to be a research starter. This Survey is Machine-Summarized, "+
+                   "\nhence some sentences might be wrangled or grammatically incorrect. However all sentences are "+
+                   "\nmined with proper citations. As All of the text is practically quoted texted, hence to "+
+                   "\nimprove visibility, all the papers are duly cited in the Bibiliography section. as bibtex "+
+                   "\nentries(only to avoid LaTex overhead). ")
+        print("Disclaimer: This survey is intended to be a research starter. This Survey is Machine-Summarized, "+
+                "\nhence some sentences might be wrangled or grammatically incorrect. However all sentences are "+
+                "\nmined with proper citations. As All of the text is practically quoted texted, hence to "+
+                "\nimprove visibility, all the papers are duly cited in the Bibiliography section. as bibtex "+
+                "\nentries(only to avoid LaTex overhead). ")
         file.write("----------------------------------------------------------------------")
         print("----------------------------------------------------------------------")
         file.write("")
