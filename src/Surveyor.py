@@ -2,7 +2,6 @@ import torch
 import os
 from summarizer import Summarizer
 from sentence_transformers import SentenceTransformer
-import scispacy
 import spacy
 import numpy as np
 from keybert import KeyBERT
@@ -15,7 +14,7 @@ except:
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoConfig, AutoModel, LEDTokenizer, \
         LEDForConditionalGeneration
 
-from defaults import DEFAULTS
+from src.defaults import DEFAULTS
 
 
 class Surveyor:
@@ -389,8 +388,6 @@ class Surveyor:
         file.close()
 
     def build_basic_blocks(self, corpus_known_sections, corpus):
-        from pprint import pprint
-
 
         research_blocks = {}
         for head, textarr in corpus_known_sections.items():
@@ -589,8 +586,6 @@ class Surveyor:
         return papers
 
     def build_corpus(self, papers, papers_meta):
-        import numpy as np
-        import random
         corpus = self.build_meta_corpus(papers_meta)
         for p in papers:
             ph = []
@@ -618,8 +613,6 @@ class Surveyor:
 
     def build_meta_corpus(self, papers):
         meta_corpus = {}
-        from pprint import pprint
-        import random
         for p in papers:
             # pprint(p)
             pid = p['id']
@@ -726,8 +719,6 @@ class Surveyor:
         return papers, ids_none
 
     def extract_parts(self, papers, txt_dir, dump_dir):
-        import glob
-        import joblib
 
         headings_all = {}
         # refined = []
@@ -840,7 +831,6 @@ class Surveyor:
                 return c.isupper()
 
     def extract_headings(self, txt_file):
-        import numpy as np
         import re
 
         fulltext = self.read_paper(txt_file)
@@ -906,7 +896,6 @@ class Surveyor:
         return lines
 
     def scan_text(self, lines, abs_head=None):
-        import numpy as np
         import re
         # print('\n'.join(lines))
         record = False
@@ -1001,7 +990,6 @@ class Surveyor:
 
     def extract_images(self, papers, pdf_dir, img_dir):
         import fitz
-        import glob
         # print("in images")
         for p in papers:
             file = pdf_dir + p['id'] + ".pdf"
@@ -1034,7 +1022,6 @@ class Surveyor:
 
     def save_tables(self, dfs, pid, tab_dir):
         # todo
-        import pandas
         dfs = [df for df in dfs if not self.check_para(df)]
         files = []
         for df in dfs:
@@ -1045,8 +1032,6 @@ class Surveyor:
 
     def extract_tables(self, papers, pdf_dir, tab_dir):
         import tabula
-        import pandas as pd
-        import glob
         check = True
         # for file in glob.glob(pdf_dir+'/*.pdf'):
         for p in papers:
@@ -1101,7 +1086,6 @@ class Surveyor:
         return results, searched_papers
 
     def download_pdfs(self, papers, pdf_dir):
-        import os
         import arxiv
         from urllib.parse import urlparse
         ids = [p['id'] for p in papers]
@@ -1115,7 +1099,6 @@ class Surveyor:
             p.download_pdf(filename=download_file)
 
     def download_sources(self, papers, src_dir):
-        import os
         import arxiv
         from urllib.parse import urlparse
         ids = [p['id'] for p in papers]
@@ -1132,7 +1115,7 @@ class Surveyor:
 
         import multiprocessing
         # import arxiv_public_data
-        from arxiv_public_data.fulltext import convert_directory_parallel
+        from src.arxiv_public_data.fulltext import convert_directory_parallel
         convert_directory_parallel(pdf_dir, multiprocessing.cpu_count())
         for file in glob.glob(pdf_dir + '/*.txt'):
             shutil.move(file, txt_dir)
@@ -1145,7 +1128,7 @@ class Surveyor:
 
     def cocitation_network(self, papers, txt_dir):
         import multiprocessing
-        from arxiv_public_data import internal_citations
+        from src.arxiv_public_data import internal_citations
 
         cites = internal_citations.citation_list_parallel(N=multiprocessing.cpu_count(), directory=txt_dir)
         print("\ncitation-network: ")
@@ -1238,14 +1221,14 @@ class Surveyor:
         return outputs
 
     def zip_outputs(self, dump_dir, query):
-        import zipfile, shutil
+        import zipfile
         def zipdir(path, ziph):
             # ziph is zipfile handle
             for root, dirs, files in os.walk(path):
                 for file in files:
                     ziph.write(os.path.join(root, file),
                                os.path.relpath(os.path.join(root, file),
-                                               os.path.join(path, '..')))
+                                               os.path.join(path, '../..')))
 
         zip_name = 'arxiv_dumps_'+query.replace(' ', '_')+'.zip'
         zipf = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED)
@@ -1253,11 +1236,8 @@ class Surveyor:
         return zip_name
 
     def survey(self, query, max_search=None, num_papers=None, debug=False, weigh_authors=False):
-        import traceback, sys
         import joblib
         import os, shutil
-        import numpy
-        import random
         if not max_search:
             max_search = DEFAULTS['max_search']
         if not num_papers:
@@ -1384,7 +1364,7 @@ class Surveyor:
         print("\nSurvey complete.. \nSurvey file path :" + os.path.abspath(
             survey_file) + "\nAll outputs zip path :" + os.path.abspath(self.dump_dir + output_zip))
 
-        return zipf, survey_file
+        return os.path.abspath(self.dump_dir + output_zip), os.path.abspath(survey_file)
 
 
 if __name__ == '__main__':
