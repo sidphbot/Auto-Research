@@ -476,6 +476,46 @@ class Surveyor:
         assert ('str' in str(type(random.sample(docs, 1)[0])))
         return [doc for doc in docs if doc != '']
 
+
+    def cluster_lines(self, abs_lines):
+        from sklearn.cluster import KMeans
+        # from bertopic import BERTopic
+        # topic_model = BERTopic(embedding_model=embedder)
+        torch.cuda.empty_cache()
+        corpus_embeddings = self.embedder.encode(abs_lines)
+        # Normalize the embeddings to unit length
+        corpus_embeddings = corpus_embeddings / np.linalg.norm(corpus_embeddings, axis=1, keepdims=True)
+        with torch.no_grad():
+            optimal_k = self.model.calculate_optimal_k(' '.join(abs_lines), k_max=10)
+        # Perform kmean clustering
+
+        clustering_model = KMeans(n_clusters=optimal_k, n_init=20, n_jobs=-1)
+        # clustering_model = AgglomerativeClustering(n_clusters=optimal_k, affinity='cosine', linkage='average') #, affinity='cosine', linkage='average', distance_threshold=0.4)
+        clustering_model.fit(corpus_embeddings)
+        cluster_assignment = clustering_model.labels_
+
+        clustered_sentences = {}
+        dummy_count = 0
+        for sentence_id, cluster_id in enumerate(cluster_assignment):
+            if cluster_id not in clustered_sentences:
+                clustered_sentences[cluster_id] = []
+            '''
+            if dummy_count < 5:
+                print("abs_line: "+abs_lines[sentence_id])
+                print("cluster_ID: "+str(cluster_id))
+                print("embedding: "+str(corpus_embeddings[sentence_id]))
+                dummy_count += 1
+            '''
+            clustered_sentences[cluster_id].append(abs_lines[sentence_id])
+
+        # for i, cluster in clustered_sentences.items():
+        # print("Cluster ", i+1)
+        # print(cluster)
+        # print("")
+
+        return self.get_clustered_sections(clustered_sentences), clustered_sentences
+
+
     def get_clusters(self, papers, papers_meta):
         from sklearn.cluster import KMeans
         # from bertopic import BERTopic
@@ -1006,6 +1046,18 @@ class Surveyor:
         # print(papers[0].keys())
         return papers
 
+
+    def extract_images_from_file(self, pdf_file_name, img_dir):
+        import fitz
+        pdf_file = fitz.open(pdf_file_name)
+        images = []
+        for page_index in range(len(pdf_file)):
+            page = pdf_file[page_index]
+            images.extend(page.getImageList())
+        images_files = [self.save_image(pdf_file.extractImage(img[0]), i, pdf_file_name.replace('.pdf', ''), img_dir) for i, img in
+                        enumerate(set(images)) if img[0]]
+        return images_files
+
     def save_image(self, base_image, img_index, pid, img_dir):
         from PIL import Image
         import io
@@ -1039,6 +1091,14 @@ class Surveyor:
             p['tables'] = self.save_tables(dfs, p['id'], tab_dir)
         # print(papers[0].keys())
         return papers
+
+    def extract_tables_from_file(self, pdf_file_name, tab_dir):
+        import tabula
+        check = True
+        # for file in glob.glob(pdf_dir+'/*.pdf'):
+        dfs = tabula.read_pdf(pdf_file_name, pages='all', multiple_tables=True, silent=True)
+
+        return self.save_tables(dfs, pdf_file_name.replace('.pdf', ''), tab_dir)
 
     def search(self, query_text=None, id_list=None, max_search=100):
         import arxiv
