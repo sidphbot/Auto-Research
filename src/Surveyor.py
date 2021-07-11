@@ -398,7 +398,7 @@ class Surveyor:
             with torch.no_grad():
                 summtext = self.model(" ".join([l.lower() for l in textarr]), ratio=0.5)
             res = self.nlp(summtext)
-            res = [str(sent) for sent in list(res.sents)]
+            res = set([str(sent) for sent in list(res.sents)])
             summtext = ''.join([line for line in res])
             # pprint(summtext)
             research_blocks[head] = summtext
@@ -423,9 +423,11 @@ class Surveyor:
             summary_ids = self.ledmodel.generate(**inputs)
         summary = self.ledtokenizer.batch_decode(summary_ids, skip_special_tokens=True,
                                                  clean_up_tokenization_spaces=True)
-
+        res = self.nlp(summary[0])
+        res = set([str(sent) for sent in list(res.sents)])
+        summtext = ''.join([line for line in res])
         #print("abstractive summary type:" + str(type(summary)))
-        return summary[0]
+        return summtext
 
     def get_abstract(self, abs_lines, corpus_known_sections, research_blocks):
 
@@ -695,14 +697,14 @@ class Surveyor:
         # assert(len(papers_selected)==num_papers)
         print("num papers selected: " + str(len(papers_selected)))
         for p in papers_selected:
-            print("Setected Paper: " + p['title'])
+            print("Selected Paper: " + p['title'])
 
         print("constrast with natural selection: forward")
         for p in papers[:4]:
-            print("Setected Paper: " + p['title'])
+            print("Selected Paper: " + p['title'])
         print("constrast with natural selection: backward")
         for p in papers[-4:]:
-            print("Setected Paper: " + p['title'])
+            print("Selected Paper: " + p['title'])
         # arxiv search producing better relevnce
         return papers_selected
 
@@ -711,7 +713,7 @@ class Surveyor:
         with torch.no_grad():
             res = self.model(text, ratio=0.5)
         res_doc = self.nlp(res)
-        return " ".join([str(sent) for sent in list(res_doc.sents)])
+        return " ".join(set([str(sent) for sent in list(res_doc.sents)]))
 
     def extractive_highlights(self, lines):
         # text = " ".join(lines)
@@ -721,7 +723,7 @@ class Surveyor:
         with torch.no_grad():
             res = self.model(" ".join([l.lower() for l in lines]), ratio=0.5, )
         res_doc = self.nlp(res)
-        res_lines = [str(sent) for sent in list(res_doc.sents)]
+        res_lines = set([str(sent) for sent in list(res_doc.sents)])
         # print("\n".join(res_sents))
         with torch.no_grad():
             keywords = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])), stop_words='english')
