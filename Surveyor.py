@@ -241,7 +241,7 @@ class Surveyor:
 
     def get_freq_cited(self, cites_dict, k=5):
         cites_list = []
-        for k, v in cites_dict:
+        for k, v in cites_dict.items():
             cites_list.append(k)
             [cites_list.append(val) for val in v]
         cite_freqs = {cite: cites_list.count(cite) for cite in set(cites_list)}
