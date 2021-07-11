@@ -41,12 +41,17 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     python_requires=">=3.7",
+    dependency_urls=[
+        "https://github.com/jaepil/pdfminer3k/archive/1.0.4.zip#egg=pdfminer",
+        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_scibert-0.4.0.tar.gz#egg=en_core_sci_scibert",
+        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz#egg=en_core_sci_lg",
+    ],
     install_requires=[
         "pip",
         "boto3==1.9.118",
         "requests==2.20.0",
         "unicodedata2==11.0.0",
-        "https://github.com/jaepil/pdfminer3k/archive/1.0.4.zip",
+        "pdfminer",
         "sentence-transformers",
         "pdftotext",
         "arxiv",
@@ -62,10 +67,16 @@ setuptools.setup(
         "amrlib",
         "transformers",
         "neuralcoref",
-        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_scibert-0.4.0.tar.gz",
-        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz",
+        "en_core_sci_scibert",
+        "en_core_sci_lg",
         "bert-extractive-summarizer",
 
     ],
     tests_require=["pytest"],
+    entry_points={
+        'console_scripts': [
+            'cursive = src.Surveyor:main',
+        ],
+    },
+
 )
