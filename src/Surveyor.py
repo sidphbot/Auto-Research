@@ -1123,7 +1123,7 @@ class Surveyor:
         results = [result for result in search.get()]
 
         searched_papers = []
-
+        discarded_ids = []
         for result in results:
             id = urlparse(result.entry_id).path.split('/')[-1].split('v')[0]
             if '.' in id:
@@ -1145,7 +1145,9 @@ class Surveyor:
                 }
                 searched_papers.append(paper)
             else:
-                print("Paper discarded due to id error [arxiv api bug: #74] :" + result.title)
+                discarded_ids.append(urlparse(result.entry_id).path.split('/')[-1].split('v')[0])
+
+        print("\nPapers discarded due to id error [arxiv api bug: #74] :\n" + str(discarded_ids))
 
         return results, searched_papers
 
