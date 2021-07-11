@@ -9,7 +9,7 @@ logging.basicConfig(
 baselog = logging.getLogger('arxivdata')
 logger = baselog.getChild('config')
 
-DEFAULT_PATH = os.path.join(os.path.abspath('./'), 'arxiv-data')
+DEFAULT_PATH = os.path.join(os.path.abspath('/'), 'arxiv-data')
 JSONFILE = './config.json'
 KEY = 'ARXIV_DATA'
 

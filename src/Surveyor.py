@@ -1175,7 +1175,7 @@ class Surveyor:
 
         import multiprocessing
         # import arxiv_public_data
-        from src.arxiv_public_data.fulltext import convert_directory_parallel
+        from arxiv_public_data import convert_directory_parallel
         convert_directory_parallel(pdf_dir, multiprocessing.cpu_count())
         for file in glob.glob(pdf_dir + '/*.txt'):
             shutil.move(file, txt_dir)
@@ -1188,7 +1188,7 @@ class Surveyor:
 
     def cocitation_network(self, papers, txt_dir):
         import multiprocessing
-        from src.arxiv_public_data import internal_citations
+        from arxiv_public_data import internal_citations
 
         cites = internal_citations.citation_list_parallel(N=multiprocessing.cpu_count(), directory=txt_dir)
         print("\ncitation-network: ")
