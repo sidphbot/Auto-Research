@@ -1,5 +1,10 @@
 from src.Surveyor import Surveyor
 
+import logging
+logging.basicConfig()
+logging.getLogger().setLevel(logging.ERROR)
+
+
 if __name__ == '__main__':
     import argparse
 
