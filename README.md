@@ -8,6 +8,10 @@ Requires:
  - 8GB disk space 
  - 13GB CUDA(GPU) memory - for a survey of 100 searched papers(max_search) and 25 selected papers(num_papers)
 
+#### Demo : 
+Video Demo : (https://drive.google.com/file/d/1-77J2L10lsW-bFDOGdTaPzSr_utY743g/view?usp=sharing)
+Kaggle descriptive re-usable Demo : https://www.kaggle.com/sidharthpal/auto-research-generate-survey-from-query 
+(`[TIP]` click 'edit and run' to run the demo for your custom queries on a free GPU)
 
 #### Steps to run (pip coming soon):
 ```
