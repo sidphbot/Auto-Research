@@ -51,8 +51,8 @@ setuptools.setup(
     python_requires=">=3.7",
     dependency_urls=[
         "https://github.com/jaepil/pdfminer3k/archive/1.0.4.zip#egg=pdfminer",
-        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_scibert-0.4.0.tar.gz#egg=en_core_sci_scibert",
-        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz#egg=en_core_sci_lg",
+        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_scibert-0.4.0.tar.gz#egg=en_core_sci_scibert-0.4.0",
+        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz#egg=en_core_sci_lg-0.4.0",
     ],
     install_requires=[
         "pip",
