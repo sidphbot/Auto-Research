@@ -1471,6 +1471,7 @@ if __name__ == '__main__':
                         help='High GPU usage permitted, defaults to False')
 
     args = parser.parse_args()
+    print(args)
     surveyor = Surveyor(
         pdf_dir=args.pdf_dir,
         txt_dir=args.txt_dir,
