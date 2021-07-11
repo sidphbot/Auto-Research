@@ -16,7 +16,7 @@ git clone https://github.com/sidphbot/Auto-Research.git
 
 cd Auto-Research/
 pip install -r requirements.txt
-python Surveyor.py [options] <your_research_query>
+python survey.py [options] <your_research_query>
 ```
 
 #### Artifacts generated (zipped):
@@ -30,13 +30,13 @@ python Surveyor.py [options] <your_research_query>
 ## Example run #1 - python utility
 
 ```
-python src/Surveyor.py 'multi-task representation learning'
+python survey.py 'multi-task representation learning'
 ```
 
 ## Example run #2 - python class
 
 ```
-from Surveyor import Surveyor
+from survey import Surveyor
 mysurveyor = Surveyor()
 mysurveyor.survey('quantum entanglement')
 ```
@@ -45,7 +45,7 @@ mysurveyor.survey('quantum entanglement')
 
 - inside code 
 ```
-from Surveyor import DEFAULTS
+from survey.Surveyor import DEFAULTS
 from pprint import pprint
 
 pprint(DEFAULTS)
@@ -59,10 +59,10 @@ or,
 - At runtime (utility)
 
 ```
-python src/Surveyor.py --help
+python survey.py --help
 ```
 ```
-usage: Surveyor.py [-h] [--max_search max_metadata_papers]
+usage: survey.py [-h] [--max_search max_metadata_papers]
                    [--num_papers max_num_papers] [--pdf_dir pdf_dir]
                    [--txt_dir txt_dir] [--img_dir img_dir] [--tab_dir tab_dir]
                    [--dump_dir dump_dir] [--models_dir save_models_dir]
