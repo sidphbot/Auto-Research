@@ -12,11 +12,12 @@ Requires:
 
 #### Demo : 
 
-Video Demo : (https://drive.google.com/file/d/1-77J2L10lsW-bFDOGdTaPzSr_utY743g/view?usp=sharing)
+Video Demo : https://drive.google.com/file/d/1-77J2L10lsW-bFDOGdTaPzSr_utY743g/view?usp=sharing
 
-Kaggle descriptive re-usable Demo : https://www.kaggle.com/sidharthpal/auto-research-generate-survey-from-query 
+Kaggle Re-usable Demo : https://www.kaggle.com/sidharthpal/auto-research-generate-survey-from-query 
 
 (`[TIP]` click 'edit and run' to run the demo for your custom queries on a free GPU)
+
 
 #### Steps to run (pip coming soon):
 ```
