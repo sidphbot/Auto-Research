@@ -50,6 +50,104 @@ mysurveyor = Surveyor()
 mysurveyor.survey('quantum entanglement')
 ```
 
+### Research tools: 
+
+These are independent tools for your research or document text handling needs.
+
+```
+*[Tip]* :(models can be changed in defaults or passed on during init along with `refresh-models=True`)
+```
+
+- `abstractive_summary` - takes a long text document (`string`) and returns a 1-paragraph abstract or “abstractive” summary (`string`)
+
+	Input: 		
+		
+		`longtext` : string
+		
+	Returns: 		
+		
+		`summary` : string
+
+- `extractive_summary` - takes a long text document (`string`) and returns a 1-paragraph of extracted highlights or “extractive” summary (`string`)
+
+	Input: 		
+		
+		`longtext` : string
+		
+	Returns: 		
+		
+		`summary` : string
+
+- `generate_title` - takes a long text document (`string`) and returns a generated title (`string`)
+
+	Input: 		
+		
+		`longtext` : string
+		
+	Returns: 		
+		
+		`title` : string
+
+- `extractive_highlights` - takes a long text document (`string`) and returns a list of extracted highlights (`[string]`), a list of keywords (`[string]`) and key phrases (`[string]`)
+
+	Input: 		
+		
+		`longtext` : string
+		
+	Returns: 		
+		
+		`highlights` : [string]
+		`keywords` : [string]
+		`keyphrases` : [string]
+
+- `extract_images_from_file` - takes a pdf file name (`string`) and returns a list of image filenames (`[string]`).
+
+	Input: 		
+		
+		`pdf_file` : string
+		
+	Returns: 		
+		
+		`images_files` : [string]
+
+- `extract_tables_from_file` - takes a pdf file name (`string`) and returns a list of csv filenames (`[string]`).
+
+	Input: 		
+		
+		`pdf_file` : string
+		
+	Returns: 		
+		
+		`images_files` : [string]
+
+- `cluster_lines` - takes a list of lines (`string`) and returns the topic-clustered sections (`dict(generated_title: [cluster_abstract])`) and clustered lines (`dict(cluster_id: [cluster_lines])`)
+
+	Input: 		
+		
+		`lines` : [string]
+		
+	Returns: 		
+		
+		`sections` : dict(generated_title: [cluster_abstract])
+		`clusters` : dict(cluster_id: [cluster_lines])
+
+- `extract_headings` - *[for scientific texts - Assumes an ‘abstract’ heading present]* takes a text file name (`string`) and returns a list of headings (`[string]`) and refined lines (`[string]`). 
+    
+    `[Tip 1]` : Use `extract_sections` as a wrapper (e.g. `extract_sections(extract_headings(“/path/to/textfile”)`) to get heading-wise sectioned text with refined lines instead (`dict( heading: text)`)
+    
+    `[Tip 2]` : write the word ‘abstract’ at the start of the file text to get an extraction for non-scientific texts as well !!
+
+	Input: 		
+		
+		`text_file` : string 		
+		
+	Returns: 
+		
+		`refined` : [string], 
+		`headings` : [string]
+		`sectioned_doc` : dict( heading: text) (Optional - Wrapper case)
+
+
 ## Access/Modify defaults:
 
 - inside code 
@@ -163,97 +261,3 @@ optional arguments:
     - `max_search`: int maximium number of papers to gaze at - defaults to `100`
     - `num_papers`: int maximium number of papers to download and analyse - defaults to `25`
     
-### Extra Methods: 
-
-```
-*[Tip]* :(models can be changed in defaults or passed on during init along with `refresh-models=True`)
-```
-
-- `abstractive_summary` - takes a long text document (`string`) and returns a 1-paragraph abstract or “abstractive” summary (`string`)
-
-	Input: 		
-		
-		`longtext` : string
-		
-	Returns: 		
-		
-		`summary` : string
-
-- `extractive_summary` - takes a long text document (`string`) and returns a 1-paragraph of extracted highlights or “extractive” summary (`string`)
-
-	Input: 		
-		
-		`longtext` : string
-		
-	Returns: 		
-		
-		`summary` : string
-
-- `generate_title` - takes a long text document (`string`) and returns a generated title (`string`)
-
-	Input: 		
-		
-		`longtext` : string
-		
-	Returns: 		
-		
-		`title` : string
-
-- `extractive_highlights` - takes a long text document (`string`) and returns a list of extracted highlights (`[string]`), a list of keywords (`[string]`) and key phrases (`[string]`)
-
-	Input: 		
-		
-		`longtext` : string
-		
-	Returns: 		
-		
-		`highlights` : [string]
-		`keywords` : [string]
-		`keyphrases` : [string]
-
-- `extract_images_from_file` - takes a pdf file name (`string`) and returns a list of image filenames (`[string]`).
-
-	Input: 		
-		
-		`pdf_file` : string
-		
-	Returns: 		
-		
-		`images_files` : [string]
-
-- `extract_tables_from_file` - takes a pdf file name (`string`) and returns a list of csv filenames (`[string]`).
-
-	Input: 		
-		
-		`pdf_file` : string
-		
-	Returns: 		
-		
-		`images_files` : [string]
-
-- `cluster_lines` - takes a list of lines (`string`) and returns the topic-clustered sections (`dict(generated_title: [cluster_abstract])`) and clustered lines (`dict(cluster_id: [cluster_lines])`)
-
-	Input: 		
-		
-		`lines` : [string]
-		
-	Returns: 		
-		
-		`sections` : dict(generated_title: [cluster_abstract])
-		`clusters` : dict(cluster_id: [cluster_lines])
-
-- `extract_headings` - *[for scientific texts - Assumes an ‘abstract’ heading present]* takes a text file name (`string`) and returns a list of headings (`[string]`) and refined lines (`[string]`). 
-    
-    `[Tip 1]` : Use `extract_sections` as a wrapper (e.g. `extract_sections(extract_headings(“/path/to/textfile”)`) to get heading-wise sectioned text with refined lines instead (`dict( heading: text)`)
-    
-    `[Tip 2]` : write the word ‘abstract’ at the start of the file text to get an extraction for non-scientific texts as well !!
-
-	Input: 		
-		
-		`text_file` : string 		
-		
-	Returns: 
-		
-		`refined` : [string], 
-		`headings` : [string]
-		`sectioned_doc` : dict( heading: text) (Optional - Wrapper case)
