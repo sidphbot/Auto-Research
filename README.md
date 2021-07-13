@@ -1,5 +1,5 @@
 # Auto-Research
-##### A no-code utility to generate a detailed well-cited survey with topic clustered sections (draft paper format) and other interesting artifacts from a single research query.
+A no-code utility to generate a detailed well-cited survey with topic clustered sections (draft paper format) and other interesting artifacts from a single research query.
 
 Data Provider: [arXiv](https://arxiv.org/) Open Archive Initiative OAI
 
