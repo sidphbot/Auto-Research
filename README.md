@@ -6,7 +6,7 @@ A no-code utility to generate a detailed well-cited survey with topic clustered 
 
 Data Provider: [arXiv](https://arxiv.org/) Open Archive Initiative OAI
 
-Requires:
+Requirements:
  - python 3.7 or above
  - poppler-utils
  - list of requirements in requirements.txt
