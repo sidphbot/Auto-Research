@@ -42,7 +42,8 @@ class Surveyor:
             similarity_nlp_name=None,
             kw_model_name=None,
             high_gpu=None,
-            refresh_models=False
+            refresh_models=False,
+            no_save_models=False
     ):
         '''
         Initializes models and directory structure for the surveyor
@@ -63,7 +64,8 @@ class Surveyor:
             - kw_model_name: String, keyword extraction model name/tag in hugging-face, defaults to `distilbert-base-nli-mean-tokens`
             - high_gpu: Bool, High GPU usage permitted, defaults to False
             - refresh_models: Bool, Refresh model downloads with given names (needs atleast one model name param above), defaults to False
-
+            - no_save_models: forces refresh models
+            
             - max_search: int maximium number of papers to gaze at - defaults to 100
             - num_papers: int maximium number of papers to download and analyse - defaults to 25
 
@@ -86,7 +88,7 @@ class Surveyor:
             models_dir = DEFAULTS['models_dir']
 
         models_found = False
-        if os.path.exists(models_dir):
+        if os.path.exists(models_dir) and not no_save_models:
             if len(os.listdir(models_dir)) > 6:
                 models_found = True
 
@@ -104,13 +106,15 @@ class Surveyor:
             similarity_nlp_name = DEFAULTS["similarity_nlp_name"]
 
         if refresh_models or not models_found:
-            print("\nInitializing and saving models(about 5GB) to " + models_dir)
-            self.clean_dirs([models_dir])
+            print(f'\nInitializing models {"and saving (about 5GB)" if not no_save_models else ""}')
+            if not no_save_models:
+                self.clean_dirs([models_dir])
 
             self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
             self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name).to(self.torch_device)
             self.title_model.eval()
-            self.title_model.save_pretrained(models_dir + "/title_model")
+            if not no_save_models:
+                self.title_model.save_pretrained(models_dir + "/title_model")
             #self.title_tokenizer.save_pretrained(models_dir + "/title_tokenizer")
 
             # summary model
@@ -120,19 +124,22 @@ class Surveyor:
             self.summ_model = AutoModel.from_pretrained(ex_summ_model_name, config=self.custom_config).to(
                 self.torch_device)
             self.summ_model.eval()
-            self.summ_model.save_pretrained(models_dir + "/summ_model")
+            if not no_save_models:
+                self.summ_model.save_pretrained(models_dir + "/summ_model")
             #self.summ_tokenizer.save_pretrained(models_dir + "/summ_tokenizer")
             self.model = Summarizer(custom_model=self.summ_model, custom_tokenizer=self.summ_tokenizer)
 
             self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
             self.ledmodel = LEDForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
             self.ledmodel.eval()
-            self.ledmodel.save_pretrained(models_dir + "/ledmodel")
+            if not no_save_models:
+                self.ledmodel.save_pretrained(models_dir + "/ledmodel")
             #self.ledtokenizer.save_pretrained(models_dir + "/ledtokenizer")
 
             self.embedder = SentenceTransformer(embedder_name)
             self.embedder.eval()
-            self.embedder.save(models_dir + "/embedder")
+            if not no_save_models:
+                self.embedder.save(models_dir + "/embedder")
         else:
             print("\nInitializing from previously saved models at" + models_dir)
             self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)

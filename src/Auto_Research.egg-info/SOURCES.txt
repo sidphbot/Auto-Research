@@ -1,0 +1,10 @@
+LICENSE
+README.md
+pyproject.toml
+setup.py
+src/Auto_Research.egg-info/PKG-INFO
+src/Auto_Research.egg-info/SOURCES.txt
+src/Auto_Research.egg-info/dependency_links.txt
+src/Auto_Research.egg-info/entry_points.txt
+src/Auto_Research.egg-info/requires.txt
+src/Auto_Research.egg-info/top_level.txt
