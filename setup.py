@@ -49,11 +49,6 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     python_requires=">=3.7",
-    dependency_urls=[
-        "https://github.com/jaepil/pdfminer3k/archive/1.0.4.zip#egg=pdfminer",
-        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_scibert-0.4.0.tar.gz#egg=en_core_sci_scibert-0.4.0",
-        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz#egg=en_core_sci_lg-0.4.0",
-    ],
     install_requires=[
         "pip",
         "boto3==1.9.118",
@@ -76,9 +71,13 @@ setuptools.setup(
         "transformers",
         "neuralcoref",
         "en_core_sci_scibert",
-        "en_core_sci_lg",
         "bert-extractive-summarizer",
-
+        "en_core_sci_lg",
+    ],
+    dependency_urls=[
+        "https://github.com/jaepil/pdfminer3k/archive/1.0.4.zip#egg=pdfminer",
+        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_scibert-0.5.0.tar.gz#egg=en_core_sci_scibert-0.5.0",
+        "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_lg-0.5.0.tar.gz#egg=en_core_sci_lg-0.5.0"
     ],
     tests_require=["pytest"],
     entry_points={

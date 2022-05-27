@@ -1,13 +1,13 @@
 boto3==1.9.118
 requests==2.20.0
-unicodedata2==11.0.0
+unicodedata2
 https://github.com/jaepil/pdfminer3k/archive/1.0.4.zip
 sentence-transformers
 pdftotext
 arxiv
 arxiv2bib
 scholarly
-PyMuPDF==1.18.14
+PyMuPDF
 Pillow
 tabula-py
 sentencepiece
@@ -16,7 +16,6 @@ spacy[all]
 scispacy
 amrlib
 transformers # >2.2.0
-neuralcoref
-https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_scibert-0.4.0.tar.gz
-https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_scibert-0.5.0.tar.gz
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_lg-0.5.0.tar.gz
 bert-extractive-summarizer

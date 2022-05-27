@@ -8,8 +8,8 @@ Data Provider: [arXiv](https://arxiv.org/) Open Archive Initiative OAI
 
 Requirements:
  - python 3.7 or above
- - poppler-utils
- - list of requirements in requirements.txt
+ - poppler-utils - `sudo apt-get install build-essential libpoppler-cpp-dev pkg-config python-dev`
+ - list of requirements in requirements.txt - `cat requirements.txt | xargs pip install`
  - 8GB disk space 
  - 13GB CUDA(GPU) memory - for a survey of 100 searched papers(max_search) and 25 selected papers(num_papers)
 
