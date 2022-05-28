@@ -22,32 +22,23 @@ Kaggle Re-usable Demo : https://www.kaggle.com/sidharthpal/auto-research-generat
 (`[TIP]` click 'edit and run' to run the demo for your custom queries on a free GPU)
 
 
-#### Steps to run (pip coming soon):
+#### Installation:
 ```
-apt install -y poppler-utils libpoppler-cpp-dev
-git clone https://github.com/sidphbot/Auto-Research.git
+sudo apt-get install build-essential poppler-utils libpoppler-cpp-dev pkg-config python-dev
+pip install git+https://github.com/sidphbot/Auto-Research.git
+```
 
-cd Auto-Research/
-pip install -r requirements.txt
+#### Run Survey (cli):
+```
 python survey.py [options] <your_research_query>
 ```
 
-#### Artifacts generated (zipped):
-- Detailed survey draft paper as txt file
-- A curated list of top 25+ papers as pdfs and txts
-- Images extracted from above papers as jpegs, bmps etc
-- Heading/Section wise highlights extracted from above papers as a re-usable pure python joblib dump
-- Tables extracted from papers(optional)
-- Corpus of metadata highlights/text of top 100 papers as a re-usable pure python joblib dump
-
-## Example run #1 - python utility
-
+#### Run Survey (Streamlit web-interface - new):
 ```
-python survey.py 'multi-task representation learning'
+streamlit run app.py
 ```
 
-## Example run #2 - python class
-
+#### Run Survey (Python API):
 ```
 from survey import Surveyor
 mysurveyor = Surveyor()
@@ -264,4 +255,17 @@ optional arguments:
     > during survey generation with `surveyor_obj.survey(query="my_research_query")`
     - `max_search`: int maximium number of papers to gaze at - defaults to `100`
     - `num_papers`: int maximium number of papers to download and analyse - defaults to `25`
+
+
+
+#### Artifacts generated (zipped):
+- Detailed survey draft paper as txt file
+- A curated list of top 25+ papers as pdfs and txts
+- Images extracted from above papers as jpegs, bmps etc
+- Heading/Section wise highlights extracted from above papers as a re-usable pure python joblib dump
+- Tables extracted from papers(optional)
+- Corpus of metadata highlights/text of top 100 papers as a re-usable pure python joblib dump
+
+
+Please cite this repo if it helped you :)
     
