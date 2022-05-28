@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-#from src.Surveyor import Surveyor
+from src.Surveyor import Surveyor
 
 def run_survey(surveyor, research_keywords, max_search, num_papers):
     zip_file_name, survey_file_name = surveyor.survey(research_keywords, 
@@ -21,16 +21,10 @@ def run_survey(surveyor, research_keywords, max_search, num_papers):
         btn = st.download_button(
              label="Download detailed generated survey file",
              data=file,
-             file_name=str(zip_file_name)
+             file_name=str(survey_file_name)
            )
-
-    with open(str(survey_file_name), "rb") as file:
-        btn = st.download_button(
-             label="Download detailed generated survey file",
-             data=file,
-             file_name=str(zip_file_name)
-           )
-        st.write(file.readlines())
+        for line in file.readlines():
+            st.write(line)
 
 
 def survey_space():
@@ -47,9 +41,9 @@ def survey_space():
 
     if submit:
         st.write("hello")
-        #if surveyor_obj is None:
-        #    surveyor_obj = Surveyor()
-        #run_survey(surveyor_obj, research_keywords, max_search, num_papers)
+        if surveyor_obj is None:
+            surveyor_obj = Surveyor()
+        run_survey(surveyor_obj, research_keywords, max_search, num_papers)
 
 
 if __name__ == '__main__':
