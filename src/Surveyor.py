@@ -41,7 +41,7 @@ class Surveyor:
             nlp_name=None,
             similarity_nlp_name=None,
             kw_model_name=None,
-            high_gpu=None,
+            high_gpu=False,
             refresh_models=False,
             no_save_models=False
     ):
