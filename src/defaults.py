@@ -1,5 +1,5 @@
 # defaults for arxiv
-DEFAULTS = {
+DEFAULTS_HIGH_GPU = {
     "max_search": 100,
     "num_papers": 20,
     "high_gpu": False,
@@ -16,5 +16,23 @@ DEFAULTS = {
     "nlp_name": "en_core_sci_scibert",
     "similarity_nlp_name": "en_core_sci_lg",
     "kw_model_name": "distilbert-base-nli-mean-tokens",
+}
 
+DEFAULTS_CPU_COMPAT = {
+    "max_search": 100,
+    "num_papers": 20,
+    "high_gpu": False,
+    "pdf_dir": "arxiv_data/tarpdfs/",
+    "txt_dir": "arxiv_data/fulltext/",
+    "img_dir": "arxiv_data/images/",
+    "tab_dir": "arxiv_data/tables/",
+    "dump_dir": "arxiv_dumps/",
+    "models_dir": "saved_models/",
+    "title_model_name": "ccdv/lsg-bart-base-4096-arxiv",
+    "ex_summ_model_name": "allenai/scibert_scivocab_uncased",
+    "ledmodel_name": "bhuvaneswari/t5-small-text_summarization",
+    "embedder_name": "paraphrase-MiniLM-L6-v2",
+    "nlp_name": "en_core_sci_scibert",
+    "similarity_nlp_name": "en_core_sci_lg",
+    "kw_model_name": "distilbert-base-nli-mean-tokens",
 }

@@ -16,7 +16,7 @@ except:
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoConfig, AutoModel, LEDTokenizer, \
         LEDForConditionalGeneration
 
-from src.defaults import DEFAULTS
+from src.defaults import DEFAULTS_CPU_COMPAT, DEFAULTS_HIGH_GPU
 
 
 class Surveyor:
@@ -70,18 +70,20 @@ class Surveyor:
             - num_papers: int maximium number of papers to download and analyse - defaults to 25
 
         '''
-        self.torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.torch_device = 'cpu'
         print("\nTorch_device: " + self.torch_device)
-        if 'cuda' in self.torch_device:
-            print("\nloading spacy for gpu")
+        if torch.cuda.is_available():
+            print("\nloading defaults for gpu")
+            self.torch_device = 'cuda'
             spacy.require_gpu()
+
+        self.high_gpu = high_gpu
+        DEFAULTS = DEFAULTS_CPU_COMPAT
+        if self.high_gpu:
+            DEFAULTS = DEFAULTS_HIGH_GPU
 
         if not kw_model_name:
             kw_model_name = DEFAULTS["kw_model_name"]
-        if not high_gpu:
-            self.high_gpu = DEFAULTS["high_gpu"]
-        else:
-            self.high_gpu = high_gpu
         self.num_papers = DEFAULTS['num_papers']
         self.max_search = DEFAULTS['max_search']
         if not models_dir:
@@ -110,8 +112,8 @@ class Surveyor:
             if not no_save_models:
                 self.clean_dirs([models_dir])
 
-            self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
-            self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name).to(self.torch_device)
+            self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name, trust_remote_code=True)
+            self.title_model = AutoModelForSeq2SeqLM.from_pretrained(title_model_name, trust_remote_code=True).to(self.torch_device)
             self.title_model.eval()
             if not no_save_models:
                 self.title_model.save_pretrained(models_dir + "/title_model")
@@ -142,7 +144,7 @@ class Surveyor:
                 self.embedder.save(models_dir + "/embedder")
         else:
             print("\nInitializing from previously saved models at" + models_dir)
-            self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
+            self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name).to(self.torch_device)
             self.title_model = AutoModelForSeq2SeqLM.from_pretrained(models_dir + "/title_model").to(self.torch_device)
             self.title_model.eval()
 
@@ -615,7 +617,11 @@ class Surveyor:
         paper_body = ""
         for k, v in research_sections.items():
             paper_body += v
-        return self.abstractive_summary(paper_body)
+
+        try:
+            return self.abstractive_summary(paper_body)
+        except:
+            return self.abstractive_summary(self.extractive_summary(paper_body))
 
     def build_corpus_sectionwise(self, papers):
         known = ['abstract', 'introduction', 'conclusion']

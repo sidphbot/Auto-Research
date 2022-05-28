@@ -27,7 +27,7 @@ def run_survey(surveyor, research_keywords, max_search, num_papers):
             st.write(line)
 
 
-def survey_space():
+def survey_space(surveyor):
     
     st.title('Automated Survey generation from research keywords - Auto-Research V0.1')
 
@@ -41,12 +41,10 @@ def survey_space():
 
     if submit:
         st.write("hello")
-        if surveyor_obj is None:
-            surveyor_obj = Surveyor()
-        run_survey(surveyor_obj, research_keywords, max_search, num_papers)
+        run_survey(surveyor, research_keywords, max_search, num_papers)
 
 
 if __name__ == '__main__':
-    global surveyor_obj
-    surveyor_obj = None
-    survey_space()
+    global surveyor
+    surveyor_obj = Surveyor()
+    survey_space(surveyor_obj)
