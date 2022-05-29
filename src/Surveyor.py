@@ -44,7 +44,9 @@ class Surveyor:
             kw_model_name=None,
             high_gpu=False,
             refresh_models=False,
-            no_save_models=False
+            no_save_models=False,
+            print_fn=None,
+            survey_print_fn=None
     ):
         '''
         Initializes models and directory structure for the surveyor
@@ -71,10 +73,16 @@ class Surveyor:
             - num_papers: int maximium number of papers to download and analyse - defaults to 25
 
         '''
+        self.print_fn = print
+        if print_fn is not None:
+            self.print_fn = print_fn
+        self.survey_print_fn = self.print_fn
+        if survey_print_fn is not None:
+            self.survey_print_fn = survey_print_fn
+
         self.torch_device = 'cpu'
-        print("\nTorch_device: " + self.torch_device)
+        self.print_fn("\nTorch_device: " + self.torch_device)
         if torch.cuda.is_available():
-            print("\nloading defaults for gpu")
             self.torch_device = 'cuda'
             spacy.require_gpu()
 
@@ -109,7 +117,7 @@ class Surveyor:
             similarity_nlp_name = self.DEFAULTS["similarity_nlp_name"]
 
         if refresh_models or not models_found:
-            print(f'\nInitializing models {"and saving (about 5GB)" if not no_save_models else ""}')
+            self.print_fn(f'\nInitializing models {"and saving (about 5GB)" if not no_save_models else ""}')
             if not no_save_models:
                 self.clean_dirs([models_dir])
 
@@ -148,7 +156,7 @@ class Surveyor:
             if not no_save_models:
                 self.embedder.save(models_dir + "/embedder")
         else:
-            print("\nInitializing from previously saved models at" + models_dir)
+            self.print_fn("\n-Initializing from previously saved models at" + models_dir)
             self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
             self.title_model = AutoModelForSeq2SeqLM.from_pretrained(models_dir + "/title_model").to(self.torch_device)
             self.title_model.eval()
@@ -230,9 +238,9 @@ class Surveyor:
 
         papers = papers_meta[:self.num_papers]
         selected_papers = papers
-        print("\nFirst stage paper collection...")
+        self.print_fn("\n-First stage paper collection...")
         ids_none, papers, cites = self.fetch_papers(dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir)
-        print("\nFirst stage paper collection complete, papers collected: \n" + ', '.join([p['id'] for p in papers]))
+        self.print_fn("\n-First stage paper collection complete, papers collected: \n" + ', '.join([p['id'] for p in papers]))
         new_papers = papers_meta[self.num_papers : self.num_papers + len(ids_none)]
         _ = self.get_freq_cited(cites)
         '''
@@ -243,16 +251,16 @@ class Surveyor:
         new_papers.extend(new_searched_papers)
         '''
         selected_papers.extend(new_papers)
-        print("\nSecond stage paper collection...")
+        self.print_fn("\n-Second stage paper collection...")
         _, new_papers, _ = self.fetch_papers(dump_dir, img_dir, new_papers, pdf_dir, tab_dir, txt_dir, repeat=True)
-        print("\nSecond stage paper collection complete, new papers collected: \n" + ', '.join([p['id'] for p in new_papers]))
+        self.print_fn("\n-Second stage paper collection complete, new papers collected: \n" + ', '.join([p['id'] for p in new_papers]))
         papers.extend(new_papers)
 
         joblib.dump(papers, dump_dir + 'papers_extracted_pdf_route.dmp')
         copy_tree(img_dir, dump_dir + os.path.basename(img_dir))
         copy_tree(tab_dir, dump_dir + os.path.basename(tab_dir))
 
-        print("\nExtracting section-wise highlights.. ")
+        self.print_fn("\n-Extracting section-wise highlights.. ")
         papers = self.extract_highlights(papers)
 
         return papers, selected_papers
@@ -265,7 +273,7 @@ class Surveyor:
             [cites_list.append(val) for val in v]
         cite_freqs = {cite: cites_list.count(cite) for cite in set(cites_list)}
         sorted_cites = dict(sorted(cite_freqs.items(), key=lambda item: item[1], reverse=True)[:5])
-        print("\nThe most cited paper ids are:\n" + str(sorted_cites))
+        self.print_fn("\n-The most cited paper ids are:\n" + str(sorted_cites))
 
         return sorted_cites.keys()
 
@@ -275,7 +283,7 @@ class Surveyor:
 
         if repeat:
             with tempfile.TemporaryDirectory() as dirpath:
-                print("\n- downloading extra pdfs.. ")
+                self.print_fn("\n- downloading extra pdfs.. ")
                 # full text preparation of selected papers
                 self.download_pdfs(papers, dirpath)
                 dirpath_pdfs = os.listdir(dirpath)
@@ -283,22 +291,22 @@ class Surveyor:
                     full_file_name = os.path.join(dirpath, file_name)
                     if os.path.isfile(full_file_name):
                         shutil.copy(full_file_name, pdf_dir)
-                print("\n- converting extra pdfs.. ")
+                self.print_fn("\n- converting extra pdfs.. ")
                 self.convert_pdfs(dirpath, txt_dir)
         else:
-            print("\n- downloading pdfs.. ")
+            self.print_fn("\n- downloading pdfs.. ")
             # full text preparation of selected papers
             self.download_pdfs(papers, pdf_dir)
-            print("\n- converting pdfs.. ")
+            self.print_fn("\n- converting pdfs.. ")
             self.convert_pdfs(pdf_dir, txt_dir)
         # plugging citations to our papers object
-        print("\n- plugging in citation network.. ")
+        self.print_fn("\n- plugging in citation network.. ")
         papers, cites = self.cocitation_network(papers, txt_dir)
         joblib.dump(papers, dump_dir + 'papers_selected_pdf_route.dmp')
         from distutils.dir_util import copy_tree
         copy_tree(txt_dir, dump_dir + os.path.basename(txt_dir))
         copy_tree(pdf_dir, dump_dir + os.path.basename(pdf_dir))
-        print("\n- extracting structure.. ")
+        self.print_fn("\n- extracting structure.. ")
         papers, ids_none = self.extract_structure(papers, pdf_dir, txt_dir, img_dir, dump_dir, tab_dir)
         return ids_none, papers, cites
 
@@ -328,92 +336,92 @@ class Surveyor:
     def build_doc(self, research_sections, papers, query=None, filename='survey.txt'):
 
         import arxiv2bib
-        print("\nbuilding bibliography entries.. ")
+        self.print_fn("\n-building bibliography entries.. ")
         bibentries = arxiv2bib.arxiv2bib([p['id'] for p in papers])
         bibentries = [r.bibtex() for r in bibentries]
 
-        print("\nbuilding final survey file .. at "+ filename)
+        self.print_fn("\n-building final survey file .. at "+ filename)
         file = open(filename, 'w+')
         if query is None:
             query = 'Internal(existing) research'
         file.write("----------------------------------------------------------------------")
         file.write("Title: A survey on " + query)
-        print("")
-        print("----------------------------------------------------------------------")
-        print("Title: A survey on " + query)
+        self.survey_print_fn("")
+        self.survey_print_fn("----------------------------------------------------------------------")
+        self.survey_print_fn("Title: A survey on " + query)
         file.write("Author: Auto-Research (github.com/sidphbot/Auto-Research)")
-        print("Author: Auto-Research (github.com/sidphbot/Auto-Research)")
+        self.survey_print_fn("Author: Auto-Research (github.com/sidphbot/Auto-Research)")
         file.write("Dev: Auto-Research (github.com/sidphbot/Auto-Research)")
-        print("Dev: Auto-Research (github.com/sidphbot/Auto-Research)")
+        self.survey_print_fn("Dev: Auto-Research (github.com/sidphbot/Auto-Research)")
         file.write("Disclaimer: This survey is intended to be a research starter. This Survey is Machine-Summarized, "+
                    "\nhence some sentences might be wrangled or grammatically incorrect. However all sentences are "+
                    "\nmined with proper citations. As All of the text is practically quoted texted, hence to "+
                    "\nimprove visibility, all the papers are duly cited in the Bibiliography section. as bibtex "+
                    "\nentries(only to avoid LaTex overhead). ")
-        print("Disclaimer: This survey is intended to be a research starter. This Survey is Machine-Summarized, "+
+        self.survey_print_fn("Disclaimer: This survey is intended to be a research starter. This Survey is Machine-Summarized, "+
                 "\nhence some sentences might be wrangled or grammatically incorrect. However all sentences are "+
                 "\nmined with proper citations. As All of the text is practically quoted texted, hence to "+
                 "\nimprove visibility, all the papers are duly cited in the Bibiliography section. as bibtex "+
                 "\nentries(only to avoid LaTex overhead). ")
         file.write("----------------------------------------------------------------------")
-        print("----------------------------------------------------------------------")
+        self.survey_print_fn("----------------------------------------------------------------------")
         file.write("")
-        print("")
+        self.survey_print_fn("")
         file.write('ABSTRACT')
-        print('ABSTRACT')
-        print("=================================================")
+        self.survey_print_fn('ABSTRACT')
+        self.survey_print_fn("=================================================")
         file.write("=================================================")
         file.write("")
-        print("")
+        self.survey_print_fn("")
         file.write(research_sections['abstract'])
-        print(research_sections['abstract'])
+        self.survey_print_fn(research_sections['abstract'])
         file.write("")
-        print("")
+        self.survey_print_fn("")
         file.write('INTRODUCTION')
-        print('INTRODUCTION')
-        print("=================================================")
+        self.survey_print_fn('INTRODUCTION')
+        self.survey_print_fn("=================================================")
         file.write("=================================================")
         file.write("")
-        print("")
+        self.survey_print_fn("")
         file.write(research_sections['introduction'])
-        print(research_sections['introduction'])
+        self.survey_print_fn(research_sections['introduction'])
         file.write("")
-        print("")
+        self.survey_print_fn("")
         for k, v in research_sections.items():
             if k not in ['abstract', 'introduction', 'conclusion']:
                 file.write(k.upper())
-                print(k.upper())
-                print("=================================================")
+                self.survey_print_fn(k.upper())
+                self.survey_print_fn("=================================================")
                 file.write("=================================================")
                 file.write("")
-                print("")
+                self.survey_print_fn("")
                 file.write(v)
-                print(v)
+                self.survey_print_fn(v)
                 file.write("")
-                print("")
+                self.survey_print_fn("")
         file.write('CONCLUSION')
-        print('CONCLUSION')
-        print("=================================================")
+        self.survey_print_fn('CONCLUSION')
+        self.survey_print_fn("=================================================")
         file.write("=================================================")
         file.write("")
-        print("")
+        self.survey_print_fn("")
         file.write(research_sections['conclusion'])
-        print(research_sections['conclusion'])
+        self.survey_print_fn(research_sections['conclusion'])
         file.write("")
-        print("")
+        self.survey_print_fn("")
 
         file.write('REFERENCES')
-        print('REFERENCES')
-        print("=================================================")
+        self.survey_print_fn('REFERENCES')
+        self.survey_print_fn("=================================================")
         file.write("=================================================")
         file.write("")
-        print("")
+        self.survey_print_fn("")
         for entry in bibentries:
             file.write(entry)
-            print(entry)
+            self.survey_print_fn(entry)
             file.write("")
-            print("")
-        print("========================XXX=========================")
+            self.survey_print_fn("")
+        self.survey_print_fn("========================XXX=========================")
         file.write("========================XXX=========================")
         file.close()
 
@@ -421,14 +429,15 @@ class Surveyor:
 
         research_blocks = {}
         for head, textarr in corpus_known_sections.items():
-            torch.cuda.empty_cache()
-            # print(head.upper())
+            if 'cuda' in self.torch_device:
+                torch.cuda.empty_cache()
+            # self.print_fn(head.upper())
             with torch.no_grad():
                 summtext = self.model(" ".join([l.lower() for l in textarr]), ratio=0.5)
             res = self.nlp(summtext)
             res = set([str(sent) for sent in list(res.sents)])
             summtext = ''.join([line for line in res])
-            # pprint(summtext)
+            # pself.print_fn(summtext)
             research_blocks[head] = summtext
 
         return research_blocks
@@ -444,7 +453,8 @@ class Surveyor:
         sequences = ledmodel.generate(input_ids, global_attention_mask=global_attention_mask).sequences
         summary = ledtokenizer.batch_decode(sequences)
         '''
-        torch.cuda.empty_cache()
+        if 'cuda' in self.torch_device:
+                torch.cuda.empty_cache()
         inputs = self.ledtokenizer.prepare_seq2seq_batch(longtext, truncation=True, padding='longest',
                                                          return_tensors='pt').to(self.torch_device)
         with torch.no_grad():
@@ -454,7 +464,7 @@ class Surveyor:
         res = self.nlp(summary[0])
         res = set([str(sent) for sent in list(res.sents)])
         summtext = ''.join([line for line in res])
-        #print("abstractive summary type:" + str(type(summary)))
+        #self.print_fn("abstractive summary type:" + str(type(summary)))
         return summtext
 
     def get_abstract(self, abs_lines, corpus_known_sections, research_blocks):
@@ -463,7 +473,7 @@ class Surveyor:
         abs_lines = ""
         abs_lines += " ".join([l.lower() for l in corpus_known_sections['abstract']])
         abs_lines += research_blocks['abstract']
-        # print(abs_lines)
+        # self.print_fn(abs_lines)
 
         try:
             return self.abstractive_summary(abs_lines)
@@ -475,12 +485,12 @@ class Surveyor:
         abs_lines = []
         types = set()
         for k, v in corpus.items():
-            # print(v)
+            # self.print_fn(v)
             types.add(type(v))
             abstext = k + '. ' + v.replace('\n', ' ')
             abstext = self.nlp(abstext)
             abs_lines.extend([str(sent).lower() for sent in list(abstext.sents)])
-        #print("unique corpus value types:" + str(types))
+        #self.print_fn("unique corpus value types:" + str(types))
         # abs_lines = '\n'.join([str(sent) for sent in abs_lines.sents])
         return abs_lines
 
@@ -501,9 +511,9 @@ class Surveyor:
             if p['id'] not in selected_pids:
                 meta_abs.append(self.generate_title(p['abstract']))
         docs.extend(meta_abs)
-        #print("meta_abs num"+str(len(meta_abs)))
-        #print("selected_pids num"+str(len(selected_pids)))
-        #print("papers_meta num"+str(len(papers_meta)))
+        #self.print_fn("meta_abs num"+str(len(meta_abs)))
+        #self.print_fn("selected_pids num"+str(len(selected_pids)))
+        #self.print_fn("papers_meta num"+str(len(papers_meta)))
         #assert (len(meta_abs) + len(selected_pids) == len(papers_meta))
         assert ('str' in str(type(random.sample(docs, 1)[0])))
         return [doc for doc in docs if doc != '']
@@ -513,7 +523,8 @@ class Surveyor:
         from sklearn.cluster import KMeans
         # from bertopic import BERTopic
         # topic_model = BERTopic(embedding_model=embedder)
-        torch.cuda.empty_cache()
+        if 'cuda' in self.torch_device:
+                torch.cuda.empty_cache()
         corpus_embeddings = self.embedder.encode(abs_lines)
         # Normalize the embeddings to unit length
         corpus_embeddings = corpus_embeddings / np.linalg.norm(corpus_embeddings, axis=1, keepdims=True)
@@ -533,17 +544,17 @@ class Surveyor:
                 clustered_sentences[cluster_id] = []
             '''
             if dummy_count < 5:
-                print("abs_line: "+abs_lines[sentence_id])
-                print("cluster_ID: "+str(cluster_id))
-                print("embedding: "+str(corpus_embeddings[sentence_id]))
+                self.print_fn("abs_line: "+abs_lines[sentence_id])
+                self.print_fn("cluster_ID: "+str(cluster_id))
+                self.print_fn("embedding: "+str(corpus_embeddings[sentence_id]))
                 dummy_count += 1
             '''
             clustered_sentences[cluster_id].append(abs_lines[sentence_id])
 
         # for i, cluster in clustered_sentences.items():
-        # print("Cluster ", i+1)
-        # print(cluster)
-        # print("")
+        # self.print_fn("Cluster ", i+1)
+        # self.print_fn(cluster)
+        # self.print_fn("")
 
         return self.get_clustered_sections(clustered_sentences), clustered_sentences
 
@@ -552,7 +563,8 @@ class Surveyor:
         from sklearn.cluster import KMeans
         # from bertopic import BERTopic
         # topic_model = BERTopic(embedding_model=embedder)
-        torch.cuda.empty_cache()
+        if 'cuda' in self.torch_device:
+                torch.cuda.empty_cache()
         abs_lines = self.get_sectioned_docs(papers, papers_meta)
         corpus_embeddings = self.embedder.encode(abs_lines)
         # Normalize the embeddings to unit length
@@ -573,22 +585,23 @@ class Surveyor:
                 clustered_sentences[cluster_id] = []
             '''
             if dummy_count < 5:
-                print("abs_line: "+abs_lines[sentence_id])
-                print("cluster_ID: "+str(cluster_id))
-                print("embedding: "+str(corpus_embeddings[sentence_id]))
+                self.print_fn("abs_line: "+abs_lines[sentence_id])
+                self.print_fn("cluster_ID: "+str(cluster_id))
+                self.print_fn("embedding: "+str(corpus_embeddings[sentence_id]))
                 dummy_count += 1
             '''
             clustered_sentences[cluster_id].append(abs_lines[sentence_id])
 
         # for i, cluster in clustered_sentences.items():
-        # print("Cluster ", i+1)
-        # print(cluster)
-        # print("")
+        # self.print_fn("Cluster ", i+1)
+        # self.print_fn(cluster)
+        # self.print_fn("")
 
         return self.get_clustered_sections(clustered_sentences), clustered_sentences
 
     def generate_title(self, longtext):
-        torch.cuda.empty_cache()
+        if 'cuda' in self.torch_device:
+                torch.cuda.empty_cache()
 
         inputs = self.title_tokenizer.prepare_seq2seq_batch(longtext, truncation=True, padding='longest',
                                                             return_tensors='pt').to(self.torch_device)
@@ -602,7 +615,7 @@ class Surveyor:
     def get_clustered_sections(self, clustered_lines):
         clusters_dict = {}
         for i, cluster in clustered_lines.items():
-            # print(cluster)
+            # self.print_fn(cluster)
             try:
                 clusters_dict[self.generate_title(str(" ".join(cluster)))] = self.abstractive_summary(
                     str(" ".join(cluster)).lower())
@@ -641,7 +654,7 @@ class Surveyor:
                 for section in p['sections']:
                     if kh in section['heading']:
                         khtext.extend(section['highlights'])
-                        # print(khtext)
+                        # self.print_fn(khtext)
             corpus_known_sections[kh] = khtext
         return corpus_known_sections
 
@@ -649,15 +662,15 @@ class Surveyor:
         known = ['abstract', 'introduction', 'discussion', 'relatedwork', 'contribution', 'analysis', 'experiments',
                  'conclusion']
         for p in papers:
-            # print("================================")
+            # self.print_fn("================================")
             headings = [section['heading'] for section in p['sections'] if len(section['heading'].split()) < 3]
-            # print("id: "+ str(p['id'])+"\nHeadings: \n"+str('\n'.join(headings)))
+            # self.print_fn("id: "+ str(p['id'])+"\nHeadings: \n"+str('\n'.join(headings)))
             for kh in known:
                 for section in p['sections']:
                     if len(section['heading'].split()) < 3:
-                        # print(section['heading'])
+                        # self.print_fn(section['heading'])
                         if kh in ''.join(filter(str.isalpha, section['heading'].replace(' ', '').lower())):
-                            # print("orig head: "+ section['heading'] +", plain head:" + kh)
+                            # self.print_fn("orig head: "+ section['heading'] +", plain head:" + kh)
                             section['heading'] = kh
         return papers
 
@@ -671,14 +684,14 @@ class Surveyor:
                 if pid == p['id']:
                     corpus[pid] = p['abstract'] + str(' '.join(ph))
         '''
-        print("==================    final corpus       ====================")
-        print('\n'.join([str("paper: "+ get_by_pid(pid, papers_meta)['title']+" \nhighlight count: " + str(len(phs))) for pid, phs in corpus.items()]))
-        print("========    sample point       ========")
+        self.print_fn("==================    final corpus       ====================")
+        self.print_fn('\n'.join([str("paper: "+ get_by_pid(pid, papers_meta)['title']+" \nhighlight count: " + str(len(phs))) for pid, phs in corpus.items()]))
+        self.print_fn("========    sample point       ========")
         p = random.choice(list(papers))
-        print("paper: "+ p['title']+" \nhighlights: " + str(corpus[p['id']]))
-        print("========    sample meta point       ========")
+        self.print_fn("paper: "+ p['title']+" \nhighlights: " + str(corpus[p['id']]))
+        self.print_fn("========    sample meta point       ========")
         p = random.choice(list(papers_meta))
-        print("meta paper: "+ p['title']+" \nhighlights: " + str(corpus[p['id']]))
+        self.print_fn("meta paper: "+ p['title']+" \nhighlights: " + str(corpus[p['id']]))
         '''
         return corpus
 
@@ -690,25 +703,25 @@ class Surveyor:
     def build_meta_corpus(self, papers):
         meta_corpus = {}
         for p in papers:
-            # pprint(p)
+            # pself.print_fn(p)
             pid = p['id']
             ptext = p['title'] + ". " + p['abstract']
             doc = self.nlp(ptext)
             phs, _, _ = self.extractive_highlights([str(sent) for sent in list(doc.sents)])
             meta_corpus[pid] = str(' '.join(phs))
         '''
-        print("==================    meta corpus       ====================")
-        print('\n'.join([str("paper: "+ get_by_pid(pid, papers)['title']+" \nhighlight count: " + str(len(phs))) for pid, phs in meta_corpus.items()]))
-        print("========    sample point       ========")
+        self.print_fn("==================    meta corpus       ====================")
+        self.print_fn('\n'.join([str("paper: "+ get_by_pid(pid, papers)['title']+" \nhighlight count: " + str(len(phs))) for pid, phs in meta_corpus.items()]))
+        self.print_fn("========    sample point       ========")
         p = random.choice(list(papers))
-        print("paper: "+ p['title']+" \nhighlights: " + str(meta_corpus[p['id']]))
+        self.print_fn("paper: "+ p['title']+" \nhighlights: " + str(meta_corpus[p['id']]))
         '''
         return meta_corpus
 
     def select_papers(self, papers, query, num_papers=20):
         import numpy as np
-        # print("paper sample: ")
-        # print(papers)
+        # self.print_fn("paper sample: ")
+        # self.print_fn(papers)
         meta_corpus = self.build_meta_corpus(papers)
         scores = []
         pids = []
@@ -716,32 +729,33 @@ class Surveyor:
             score = self.text_para_similarity(query, highlights)
             scores.append(score)
             pids.append(id)
-            print("corpus item: " + str(self.get_by_pid(id, papers)['title']))
+            self.print_fn("corpus item: " + str(self.get_by_pid(id, papers)['title']))
 
         idx = np.argsort(scores)[:num_papers]
         #for i in range(len(scores)):
-        #    print("paper: " + str(self.get_by_pid(pids[i], papers)['title']))
-        #    print("score: " + str(scores[i]))
-        # print("argsort ids("+str(num_papers)+" papers): "+ str(idx))
+        #    self.print_fn("paper: " + str(self.get_by_pid(pids[i], papers)['title']))
+        #    self.print_fn("score: " + str(scores[i]))
+        # self.print_fn("argsort ids("+str(num_papers)+" papers): "+ str(idx))
         idx = [pids[i] for i in idx]
-        # print("argsort pids("+str(num_papers)+" papers): "+ str(idx))
+        # self.print_fn("argsort pids("+str(num_papers)+" papers): "+ str(idx))
         papers_selected = [p for p in papers if p['id'] in idx]
         # assert(len(papers_selected)==num_papers)
-        print("num papers selected: " + str(len(papers_selected)))
+        self.print_fn("num papers selected: " + str(len(papers_selected)))
         for p in papers_selected:
-            print("Selected Paper: " + p['title'])
+            self.print_fn("Selected Paper: " + p['title'])
 
-        print("constrast with natural selection: forward")
+        self.print_fn("constrast with natural selection: forward")
         for p in papers[:4]:
-            print("Selected Paper: " + p['title'])
-        print("constrast with natural selection: backward")
+            self.print_fn("Selected Paper: " + p['title'])
+        self.print_fn("constrast with natural selection: backward")
         for p in papers[-4:]:
-            print("Selected Paper: " + p['title'])
+            self.print_fn("Selected Paper: " + p['title'])
         # arxiv search producing better relevnce
         return papers_selected
 
     def extractive_summary(self, text):
-        torch.cuda.empty_cache()
+        if 'cuda' in self.torch_device:
+                torch.cuda.empty_cache()
         with torch.no_grad():
             res = self.model(text, ratio=0.5)
         res_doc = self.nlp(res)
@@ -751,12 +765,13 @@ class Surveyor:
         # text = " ".join(lines)
         # text_doc = nlp(" ".join([l.lower() for l in lines]))
         # text = ' '.join([ str(sent) for sent in list(text_doc.sents)])
-        torch.cuda.empty_cache()
+        if 'cuda' in self.torch_device:
+                torch.cuda.empty_cache()
         with torch.no_grad():
             res = self.model(" ".join([l.lower() for l in lines]), ratio=0.5, )
         res_doc = self.nlp(res)
         res_lines = set([str(sent) for sent in list(res_doc.sents)])
-        # print("\n".join(res_sents))
+        # self.print_fn("\n-".join(res_sents))
         with torch.no_grad():
             keywords = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])), stop_words='english')
             keyphrases = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])),
@@ -782,14 +797,14 @@ class Surveyor:
         return papers
 
     def extract_structure(self, papers, pdf_dir, txt_dir, img_dir, dump_dir, tab_dir, tables=False):
-        print("\nextracting sections.. ")
+        self.print_fn("\n-extracting sections.. ")
         papers, ids_none = self.extract_parts(papers, txt_dir, dump_dir)
 
-        print("\nextracting images.. for future correlation use-cases ")
+        self.print_fn("\n-extracting images.. for future correlation use-cases ")
         papers = self.extract_images(papers, pdf_dir, img_dir)
 
         if tables:
-            print("\nextracting tables.. for future correlation use-cases ")
+            self.print_fn("\n-extracting tables.. for future correlation use-cases ")
             papers = self.extract_tables(papers, pdf_dir, tab_dir)
 
         return papers, ids_none
@@ -816,12 +831,12 @@ class Surveyor:
         '''
         for f, h in headings_all.items():
             if len(h) < 4:
-                print("=================headings almost undetected================")
-                print(f)
-                print(h)
+                self.print_fn("=================headings almost undetected================")
+                self.print_fn(f)
+                self.print_fn(h)
         '''
         # from pprint import pprint
-        # pprint({f: len(h) for f,h in headings_all.items()})
+        # pself.print_fn({f: len(h) for f,h in headings_all.items()})
         papers_none = [p for p in papers if p['id'] in ids_none]
         for p in papers_none:
             os.remove(txt_dir + '/'+ p['id'] + '.txt')
@@ -848,7 +863,7 @@ class Surveyor:
             start = headings[i]
             end = headings[i + 1]
             section = self.get_section(start, end, lines)
-            # print(start + " : "+ str(len(section)) +" lines")
+            # self.print_fn(start + " : "+ str(len(section)) +" lines")
             '''
             if i > 0:
               old = headings[i-1]
@@ -884,19 +899,19 @@ class Surveyor:
             start = [i for i in range(len(lines)) if first is lines[i]][0]
             end = [i for i in range(len(lines)) if last is lines[i]][0]
             section_lines = lines[start + 1:end]
-            # print("heading: " + str(first))
-            # print("section_lines: "+ str(section_lines))
-            # print(section_lines)
+            # self.print_fn("heading: " + str(first))
+            # self.print_fn("section_lines: "+ str(section_lines))
+            # self.print_fn(section_lines)
             return section_lines
         except ValueError:
-            print("value error :")
-            print("first heading :" + str(first) + ", second heading :" + str(last))
-            print("first index :" + str(start) + ", second index :" + str(end))
+            self.print_fn("value error :")
+            self.print_fn("first heading :" + str(first) + ", second heading :" + str(last))
+            self.print_fn("first index :" + str(start) + ", second index :" + str(end))
             return ""
 
     def check_list_elems_in_list(self, headings, lines):
         import numpy as np
-        # [print(head) for head in headings if head not in lines ]
+        # [self.print_fn(head) for head in headings if head not in lines ]
         return np.all([True if head in lines else False for head in headings])
 
     def check_first_char_upper(self, text):
@@ -916,25 +931,25 @@ class Surveyor:
         assert (self.check_list_elems_in_list(headings, refined))
         headings = self.check_duplicates(headings)
 
-        # print('===========================================')
-        # print(txt_file +": first scan: \n"+str(len(headings))+" headings")
-        # print('\n'.join(headings))
+        # self.print_fn('===========================================')
+        # self.print_fn(txt_file +": first scan: \n"+str(len(headings))+" headings")
+        # self.print_fn('\n'.join(headings))
 
         # scan_failed - rescan with first match for abstract hook
         if len(headings) == 0:
-            # print('===================')
-            # print("run 1 failed")
+            # self.print_fn('===================')
+            # self.print_fn("run 1 failed")
             abs_cans = [line for line in lines if 'abstract' in re.sub("\s+", "", line.strip().lower())]
             if len(abs_cans) != 0:
                 abs_head = abs_cans[0]
                 refined, headings = self.scan_text(lines, abs_head=abs_head)
                 self.check_list_elems_in_list(headings, refined)
                 headings = self.check_duplicates(headings)
-                # print('===================')
-                # print(txt_file +": second scan: \n"+str(len(headings))+" headings")
+                # self.print_fn('===================')
+                # self.print_fn(txt_file +": second scan: \n"+str(len(headings))+" headings")
 
         # if len(headings) == 0:
-        # print("heading scan failed completely")
+        # self.print_fn("heading scan failed completely")
 
         return refined, headings
 
@@ -944,7 +959,7 @@ class Surveyor:
         if len(dups) > 0:
             [my_finallist.append(n) for n in my_list if n not in my_finallist]
 
-        # print("original: "+str(len(my_list))+" new: "+str(len(my_finallist)))
+        # self.print_fn("original: "+str(len(my_list))+" new: "+str(len(my_finallist)))
         return my_finallist
 
     def clean_lines(self, text):
@@ -973,7 +988,7 @@ class Surveyor:
 
     def scan_text(self, lines, abs_head=None):
         import re
-        # print('\n'.join(lines))
+        # self.print_fn('\n'.join(lines))
         record = False
         headings = []
         refined = []
@@ -994,7 +1009,7 @@ class Surveyor:
                 refined.append(line)
                 break
             refined, headings = self.scanline(record, headings, refined, i, lines)
-            # print('=========in scan_text loop i : '+str(i)+' heading count : '+str(len(headings))+'  =========')
+            # self.print_fn('=========in scan_text loop i : '+str(i)+' heading count : '+str(len(headings))+'  =========')
         return refined, headings
 
     def scanline(self, record, headings, refined, id, lines):
@@ -1003,22 +1018,22 @@ class Surveyor:
         line = lines[id]
 
         if not len(line) == 0:
-            # print("in scanline")
-            # print(line)
+            # self.print_fn("in scanline")
+            # self.print_fn(line)
             if record:
                 refined.append(line)
                 if len(lines[id - 1]) == 0 or len(lines[id + 1]) == 0 or re.match(
                         "^[1-9XVIABCD]{0,4}(\.{0,1}[1-9XVIABCD]{0,4}){0, 3}\s{0,2}[A-Z][a-zA-Z\:\-\s]*$",
                         line) and self.char_length(line) > 7:
-                    # print("candidate")
-                    # print(line)
+                    # self.print_fn("candidate")
+                    # self.print_fn(line)
                     if np.mean([len(s) for s in lines[id + 2:id + 6]]) > 40 and self.check_first_char_upper(
                             line) and re.match("^[a-zA-Z1-9\.\:\-\s]*$", line) and len(line.split()) < 10:
                         # if len(line) < 20 and np.mean([len(s) for s in lines[i+1:i+5]]) > 30 :
                         headings.append(line)
                         assert (line in refined)
-                        # print("selected")
-                        # print(line)
+                        # self.print_fn("selected")
+                        # self.print_fn(line)
                 else:
                     known_headings = ['introduction', 'conclusion', 'abstract', 'references', 'bibliography']
                     missing = [h for h in known_headings if not np.any([True for head in headings if h in head])]
@@ -1045,7 +1060,7 @@ class Surveyor:
         for p in papers:
             if p['id'] == pid:
                 return p
-        print("\npaper not found by file, \nfile: "+file+"\nall papers: "+', '.join([p['id'] for p in papers]))
+        self.print_fn("\n-paper not found by file, \nfile: "+file+"\nall papers: "+', '.join([p['id'] for p in papers]))
 
 
     def alpha_length(self, s):
@@ -1066,7 +1081,7 @@ class Surveyor:
 
     def extract_images(self, papers, pdf_dir, img_dir):
         import fitz
-        # print("in images")
+        # self.print_fn("in images")
         for p in papers:
             file = pdf_dir + p['id'] + ".pdf"
             pdf_file = fitz.open(file)
@@ -1076,10 +1091,10 @@ class Surveyor:
                 images.extend(page.getImageList())
             images_files = [self.save_image(pdf_file.extractImage(img[0]), i, p['id'], img_dir) for i, img in
                             enumerate(set(images)) if img[0]]
-            # print(len(images_per_paper))
+            # self.print_fn(len(images_per_paper))
             p['images'] = images_files
-            # print(len(p.keys()))
-        # print(papers[0].keys())
+            # self.print_fn(len(p.keys()))
+        # self.print_fn(papers[0].keys())
         return papers
 
 
@@ -1105,7 +1120,7 @@ class Surveyor:
         # save it to local disk
         fname = img_dir + "/" + str(pid) + "_" + str(img_index + 1) + "." + image_ext
         image.save(open(f"{fname}", "wb"))
-        # print(fname)
+        # self.print_fn(fname)
         return fname
 
     def save_tables(self, dfs, pid, tab_dir):
@@ -1125,7 +1140,7 @@ class Surveyor:
         for p in papers:
             dfs = tabula.read_pdf(pdf_dir + p['id'] + ".pdf", pages='all', multiple_tables=True, silent=True)
             p['tables'] = self.save_tables(dfs, p['id'], tab_dir)
-        # print(papers[0].keys())
+        # self.print_fn(papers[0].keys())
         return papers
 
     def extract_tables_from_file(self, pdf_file_name, tab_dir):
@@ -1179,7 +1194,7 @@ class Surveyor:
             else:
                 discarded_ids.append(urlparse(result.entry_id).path.split('/')[-1].split('v')[0])
 
-        print("\nPapers discarded due to id error [arxiv api bug: #74] :\n" + str(discarded_ids))
+        self.print_fn("\n-Papers discarded due to id error [arxiv api bug: #74] :\n" + str(discarded_ids))
 
         return results, searched_papers
 
@@ -1187,8 +1202,8 @@ class Surveyor:
         import arxiv
         from urllib.parse import urlparse
         ids = [p['id'] for p in papers]
-        print("\ndownloading below selected papers: ")
-        print(ids)
+        self.print_fn("\n-downloading below selected papers: ")
+        self.print_fn(ids)
         # asert(False)
         papers_filtered = arxiv.Search(id_list=ids).get()
         for p in papers_filtered:
@@ -1201,7 +1216,7 @@ class Surveyor:
         import arxiv
         from urllib.parse import urlparse
         ids = [p['id'] for p in papers]
-        print(ids)
+        self.print_fn(ids)
         # asert(False)
         papers_filtered = arxiv.Search(id_list=ids).get()
         for p in papers_filtered:
@@ -1230,8 +1245,8 @@ class Surveyor:
 
 
         cites = internal_citations.citation_list_parallel(N=multiprocessing.cpu_count(), directory=txt_dir)
-        print("\ncitation-network: ")
-        print(cites)
+        self.print_fn("\n-citation-network: ")
+        self.print_fn(cites)
 
         for p in papers:
             p['cites'] = cites[p['id']]
@@ -1242,7 +1257,7 @@ class Surveyor:
         from scholarly import scholarly
         import operator
         # Retrieve the author's data, fill-in, and print
-        print("Searching Author: " + author_query)
+        self.print_fn("Searching Author: " + author_query)
         search_result = next(scholarly.search_author(author_query), None)
 
         if search_result is not None:
@@ -1262,7 +1277,7 @@ class Surveyor:
                 'url_picture': author['url_picture'],
             }
         else:
-            print("author not found")
+            self.print_fn("author not found")
             author_stats = {
                 'name': author_query,
                 'affiliation': "",
@@ -1276,7 +1291,7 @@ class Surveyor:
                 'url_picture': "",
             }
 
-        # pprint(author_stats)
+        # pself.print_fn(author_stats)
         return author_stats
 
     def author_stats(self, papers):
@@ -1314,9 +1329,9 @@ class Surveyor:
         start_positions = torch.tensor([1])
         end_positions = torch.tensor([3])
         outputs = self.qamodel(**inputs, start_positions=start_positions, end_positions=end_positions)
-        print("context: " + text)
-        print("question: " + question)
-        print("outputs: " + outputs)
+        self.print_fn("context: " + text)
+        self.print_fn("question: " + question)
+        self.print_fn("outputs: " + outputs)
         return outputs
 
     def zip_outputs(self, dump_dir, query):
@@ -1342,10 +1357,10 @@ class Surveyor:
         if not num_papers:
             num_papers = self.DEFAULTS['num_papers']
         # arxiv api relevance search and data preparation
-        print("\nsearching arXiv for top 100 papers.. ")
+        self.print_fn("\n-searching arXiv for top 100 papers.. ")
         results, searched_papers = self.search(query, max_search=max_search)
         joblib.dump(searched_papers, self.dump_dir + 'papers_metadata.dmp')
-        print("\nfound " + str(len(searched_papers)) + " papers")
+        self.print_fn("\n-found " + str(len(searched_papers)) + " papers")
 
         # paper selection by scibert vector embedding relevance scores
         # papers_selected = select_papers(searched_papers, query, num_papers=num_papers)
@@ -1358,23 +1373,23 @@ class Surveyor:
 
         joblib.dump(papers_highlighted, self.dump_dir + 'papers_highlighted.dmp')
 
-        print("\nStandardizing known section headings per paper.. ")
+        self.print_fn("\n-Standardizing known section headings per paper.. ")
         papers_standardized = self.standardize_headings(papers_highlighted)
         joblib.dump(papers_standardized, self.dump_dir + 'papers_standardized.dmp')
 
-        print("\nBuilding paper-wise corpus.. ")
+        self.print_fn("\n-Building paper-wise corpus.. ")
         corpus = self.build_corpus(papers_highlighted, searched_papers)
         joblib.dump(corpus, self.dump_dir + 'corpus.dmp')
 
-        print("\nBuilding section-wise corpus.. ")
+        self.print_fn("\n-Building section-wise corpus.. ")
         corpus_sectionwise = self.build_corpus_sectionwise(papers_standardized)
         joblib.dump(corpus_sectionwise, self.dump_dir + 'corpus_sectionwise.dmp')
 
-        print("\nBuilding basic research highlights.. ")
+        self.print_fn("\n-Building basic research highlights.. ")
         research_blocks = self.build_basic_blocks(corpus_sectionwise, corpus)
         joblib.dump(research_blocks, self.dump_dir + 'research_blocks.dmp')
 
-        print("\nReducing corpus to lines.. ")
+        self.print_fn("\n-Reducing corpus to lines.. ")
         corpus_lines = self.get_corpus_lines(corpus)
         joblib.dump(corpus_lines, self.dump_dir + 'corpus_lines.dmp')
 
@@ -1390,67 +1405,67 @@ class Surveyor:
         '''
 
         '''
-        print("papers_highlighted types:"+ str(np.unique([str(type(p['sections'][0]['highlights'])) for p in papers_highlighted])))
-        print("papers_highlighted example:")
-        print(random.sample(list(papers_highlighted), 1)[0]['sections'][0]['highlights'])
-        print("corpus types:"+ str(np.unique([str(type(txt)) for k,txt in corpus.items()])))
-        print("corpus example:")
-        print(random.sample(list(corpus.items()), 1)[0])
-        print("corpus_lines types:"+ str(np.unique([str(type(txt)) for txt in corpus_lines])))
-        print("corpus_lines example:")
-        print(random.sample(list(corpus_lines), 1)[0])
-        print("corpus_sectionwise types:"+ str(np.unique([str(type(txt)) for k,txt in corpus_sectionwise.items()])))
-        print("corpus_sectionwise example:")
-        print(random.sample(list(corpus_sectionwise.items()), 1)[0])
-        print("research_blocks types:"+ str(np.unique([str(type(txt)) for k,txt in research_blocks.items()])))
-        print("research_blocks example:")
-        print(random.sample(list(research_blocks.items()), 1)[0])
+        self.print_fn("papers_highlighted types:"+ str(np.unique([str(type(p['sections'][0]['highlights'])) for p in papers_highlighted])))
+        self.print_fn("papers_highlighted example:")
+        self.print_fn(random.sample(list(papers_highlighted), 1)[0]['sections'][0]['highlights'])
+        self.print_fn("corpus types:"+ str(np.unique([str(type(txt)) for k,txt in corpus.items()])))
+        self.print_fn("corpus example:")
+        self.print_fn(random.sample(list(corpus.items()), 1)[0])
+        self.print_fn("corpus_lines types:"+ str(np.unique([str(type(txt)) for txt in corpus_lines])))
+        self.print_fn("corpus_lines example:")
+        self.print_fn(random.sample(list(corpus_lines), 1)[0])
+        self.print_fn("corpus_sectionwise types:"+ str(np.unique([str(type(txt)) for k,txt in corpus_sectionwise.items()])))
+        self.print_fn("corpus_sectionwise example:")
+        self.print_fn(random.sample(list(corpus_sectionwise.items()), 1)[0])
+        self.print_fn("research_blocks types:"+ str(np.unique([str(type(txt)) for k,txt in research_blocks.items()])))
+        self.print_fn("research_blocks example:")
+        self.print_fn(random.sample(list(research_blocks.items()), 1)[0])
         '''
-        # print("corpus types:"+ str(np.unique([type(txt) for k,txt in corpus.items()])))
+        # self.print_fn("corpus types:"+ str(np.unique([type(txt) for k,txt in corpus.items()])))
 
-        print("\nBuilding abstract.. ")
+        self.print_fn("\n-Building abstract.. ")
         abstract_block = self.get_abstract(corpus_lines, corpus_sectionwise, research_blocks)
         joblib.dump(abstract_block, self.dump_dir + 'abstract_block.dmp')
         '''
-        print("abstract_block type:"+ str(type(abstract_block)))
-        print("abstract_block:")
-        print(abstract_block)
+        self.print_fn("abstract_block type:"+ str(type(abstract_block)))
+        self.print_fn("abstract_block:")
+        self.print_fn(abstract_block)
         '''
 
-        print("\nBuilding introduction.. ")
+        self.print_fn("\n-Building introduction.. ")
         intro_block = self.get_intro(corpus_sectionwise, research_blocks)
         joblib.dump(intro_block, self.dump_dir + 'intro_block.dmp')
         '''
-        print("intro_block type:"+ str(type(intro_block)))
-        print("intro_block:")
-        print(intro_block)
+        self.print_fn("intro_block type:"+ str(type(intro_block)))
+        self.print_fn("intro_block:")
+        self.print_fn(intro_block)
         '''
-        print("\nBuilding custom sections.. ")
+        self.print_fn("\n-Building custom sections.. ")
         clustered_sections, clustered_sentences = self.get_clusters(papers_standardized, searched_papers)
         joblib.dump(clustered_sections, self.dump_dir + 'clustered_sections.dmp')
         joblib.dump(clustered_sentences, self.dump_dir + 'clustered_sentences.dmp')
 
         '''
-        print("clusters extracted")
-        print("clustered_sentences types:"+ str(np.unique([str(type(txt)) for k,txt in clustered_sentences.items()])))
-        print("clustered_sentences example:")
-        print(random.sample(list(clustered_sections.items()), 1)[0])
-        print("clustered_sections types:"+ str(np.unique([str(type(txt)) for k,txt in clustered_sections.items()])))
-        print("clustered_sections example:")
-        print(random.sample(list(clustered_sections.items()), 1)[0])
+        self.print_fn("clusters extracted")
+        self.print_fn("clustered_sentences types:"+ str(np.unique([str(type(txt)) for k,txt in clustered_sentences.items()])))
+        self.print_fn("clustered_sentences example:")
+        self.print_fn(random.sample(list(clustered_sections.items()), 1)[0])
+        self.print_fn("clustered_sections types:"+ str(np.unique([str(type(txt)) for k,txt in clustered_sections.items()])))
+        self.print_fn("clustered_sections example:")
+        self.print_fn(random.sample(list(clustered_sections.items()), 1)[0])
         '''
         clustered_sections['abstract'] = abstract_block
         clustered_sections['introduction'] = intro_block
         joblib.dump(clustered_sections, self.dump_dir + 'research_sections.dmp')
 
-        print("\nBuilding conclusion.. ")
+        self.print_fn("\n-Building conclusion.. ")
         conclusion_block = self.get_conclusion(clustered_sections)
         joblib.dump(conclusion_block, self.dump_dir + 'conclusion_block.dmp')
         clustered_sections['conclusion'] = conclusion_block
         '''
-        print("conclusion_block type:"+ str(type(conclusion_block)))
-        print("conclusion_block:")
-        print(conclusion_block)
+        self.print_fn("conclusion_block type:"+ str(type(conclusion_block)))
+        self.print_fn("conclusion_block:")
+        self.print_fn(conclusion_block)
         '''
 
         survey_file = 'A_Survey_on_' + query.replace(' ', '_') + '.txt'
@@ -1460,7 +1475,7 @@ class Surveyor:
         shutil.copy(self.dump_dir + survey_file, survey_file)
         assert (os.path.exists(survey_file))
         output_zip = self.zip_outputs(self.dump_dir, query)
-        print("\nSurvey complete.. \nSurvey file path :" + os.path.abspath(
+        self.print_fn("\n-Survey complete.. \nSurvey file path :" + os.path.abspath(
             survey_file) + "\nAll outputs zip path :" + os.path.abspath(self.dump_dir + output_zip))
 
         return os.path.abspath(self.dump_dir + output_zip), os.path.abspath(survey_file)
