@@ -131,8 +131,12 @@ class Surveyor:
             #self.summ_tokenizer.save_pretrained(models_dir + "/summ_tokenizer")
             self.model = Summarizer(custom_model=self.summ_model, custom_tokenizer=self.summ_tokenizer)
 
-            self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
-            self.ledmodel = LEDForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
+            if 't5' not in ledmodel_name:
+                self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
+                self.ledmodel = LEDForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
+            else:
+                self.ledtokenizer = T5Tokenizer.from_pretrained(ledmodel_name)
+                self.ledmodel = T5ForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
             self.ledmodel.eval()
             if not no_save_models:
                 self.ledmodel.save_pretrained(models_dir + "/ledmodel")
@@ -144,7 +148,7 @@ class Surveyor:
                 self.embedder.save(models_dir + "/embedder")
         else:
             print("\nInitializing from previously saved models at" + models_dir)
-            self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name).to(self.torch_device)
+            self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
             self.title_model = AutoModelForSeq2SeqLM.from_pretrained(models_dir + "/title_model").to(self.torch_device)
             self.title_model.eval()
 
@@ -157,8 +161,12 @@ class Surveyor:
             self.summ_model.eval()
             self.model = Summarizer(custom_model=self.summ_model, custom_tokenizer=self.summ_tokenizer)
 
-            self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
-            self.ledmodel = LEDForConditionalGeneration.from_pretrained(models_dir + "/ledmodel").to(self.torch_device)
+            if 't5' not in ledmodel_name:
+                self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
+                self.ledmodel = LEDForConditionalGeneration.from_pretrained(models_dir + "/ledmodel").to(self.torch_device)
+            else:
+                self.ledtokenizer = T5Tokenizer.from_pretrained(ledmodel_name)
+                self.ledmodel = T5ForConditionalGeneration.from_pretrained(models_dir + "/ledmodel").to(self.torch_device)
             self.ledmodel.eval()
 
             self.embedder = SentenceTransformer(models_dir + "/embedder")
