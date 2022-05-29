@@ -1,0 +1,4 @@
+build-essential 
+poppler-utils 
+libpoppler-cpp-dev 
+pkg-config
