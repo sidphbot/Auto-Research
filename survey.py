@@ -9,8 +9,11 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='Generate a survey just from a query !!')
-    parser.add_argument('query', metavar='query_string', type=str,
-                        help='your research query/keywords')
+    
+    data = parser.add_mutually_exclusive_group(required=True)
+    data.add_argument('--query', type=str, help='your research query/keywords')
+    data.add_argument('--arxiv_ids', nargs='+', help='arxiv ids for your curated set of papers')
+
     parser.add_argument('--max_search', metavar='max_metadata_papers', type=int, default=None,
                         help='maximium number of papers to gaze at - defaults to 100')
     parser.add_argument('--num_papers', metavar='max_num_papers', type=int, default=None,
@@ -67,6 +70,6 @@ if __name__ == '__main__':
 
     )
 
-    surveyor.survey(args.query, max_search=args.max_search, num_papers=args.num_papers,
+    surveyor.survey(query=args.query, id_list=args.arxiv_ids, max_search=args.max_search, num_papers=args.num_papers,
                                               debug=False, weigh_authors=False)
 
