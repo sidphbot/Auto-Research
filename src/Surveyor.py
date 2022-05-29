@@ -244,11 +244,10 @@ class Surveyor:
 
         papers = papers_meta[:self.num_papers]
         selected_papers = papers
-        self.print_fn("\n-First stage paper collection...")
         ids_none, papers, cites = self.fetch_papers(dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir)
         self.print_fn("\n-First stage paper collection complete, papers collected: \n" + ', '.join([p['id'] for p in papers]))
         new_papers = papers_meta[self.num_papers : self.num_papers + len(ids_none)]
-        _ = self.get_freq_cited(cites)
+        # _ = self.get_freq_cited(cites)
         '''
         filtered_idlist = []
         for c in self.get_freq_cited(cites):
@@ -257,7 +256,6 @@ class Surveyor:
         new_papers.extend(new_searched_papers)
         '''
         selected_papers.extend(new_papers)
-        self.print_fn("\n-Second stage paper collection...")
         _, new_papers, _ = self.fetch_papers(dump_dir, img_dir, new_papers, pdf_dir, tab_dir, txt_dir, repeat=True)
         self.print_fn("\n-Second stage paper collection complete, new papers collected: \n" + ', '.join([p['id'] for p in new_papers]))
         papers.extend(new_papers)
@@ -269,7 +267,7 @@ class Surveyor:
         self.print_fn("\n-Extracting section-wise highlights.. ")
         papers = self.extract_highlights(papers)
 
-        return papers, selected_papers
+        return papers, selected_papers, cites
 
 
     def get_freq_cited(self, cites_dict, k=5):
@@ -279,7 +277,6 @@ class Surveyor:
             [cites_list.append(val) for val in v]
         cite_freqs = {cite: cites_list.count(cite) for cite in set(cites_list)}
         sorted_cites = dict(sorted(cite_freqs.items(), key=lambda item: item[1], reverse=True)[:5])
-        self.print_fn("\n-The most cited paper ids are:\n" + str(sorted_cites))
 
         return sorted_cites.keys()
 
@@ -350,6 +347,7 @@ class Surveyor:
         file = open(filename, 'w+')
         if query is None:
             query = 'Internal(existing) research'
+        self.survey_print_fn("#### Generated_survey:")
         file.write("----------------------------------------------------------------------")
         file.write("Title: A survey on " + query)
         self.survey_print_fn("")
@@ -732,7 +730,7 @@ class Surveyor:
             score = self.text_para_similarity(query, highlights)
             scores.append(score)
             pids.append(id)
-            self.print_fn("corpus item: " + str(self.get_by_pid(id, papers)['title']))
+            # self.print_fn("corpus item: " + str(self.get_by_pid(id, papers)['title']))
 
         idx = np.argsort(scores)[:num_papers]
         #for i in range(len(scores)):
@@ -747,12 +745,12 @@ class Surveyor:
         for p in papers_selected:
             self.print_fn("Selected Paper: " + p['title'])
 
-        self.print_fn("constrast with natural selection: forward")
-        for p in papers[:4]:
-            self.print_fn("Selected Paper: " + p['title'])
-        self.print_fn("constrast with natural selection: backward")
-        for p in papers[-4:]:
-            self.print_fn("Selected Paper: " + p['title'])
+        #self.print_fn("constrast with natural selection: forward")
+        #for p in papers[:4]:
+        #    self.print_fn("Selected Paper: " + p['title'])
+        #self.print_fn("constrast with natural selection: backward")
+        #for p in papers[-4:]:
+        #    self.print_fn("Selected Paper: " + p['title'])
         # arxiv search producing better relevnce
         return papers_selected
 
@@ -1205,8 +1203,6 @@ class Surveyor:
         import arxiv
         from urllib.parse import urlparse
         ids = [p['id'] for p in papers]
-        self.print_fn("\n-downloading below selected papers: ")
-        self.print_fn(ids)
         # asert(False)
         papers_filtered = arxiv.Search(id_list=ids).get()
         for p in papers_filtered:
@@ -1219,7 +1215,6 @@ class Surveyor:
         import arxiv
         from urllib.parse import urlparse
         ids = [p['id'] for p in papers]
-        self.print_fn(ids)
         # asert(False)
         papers_filtered = arxiv.Search(id_list=ids).get()
         for p in papers_filtered:
@@ -1246,10 +1241,7 @@ class Surveyor:
     def cocitation_network(self, papers, txt_dir):
         import multiprocessing
 
-
         cites = internal_citations.citation_list_parallel(N=multiprocessing.cpu_count(), directory=txt_dir)
-        self.print_fn("\n-citation-network: ")
-        self.print_fn(cites)
 
         for p in papers:
             p['cites'] = cites[p['id']]
@@ -1370,7 +1362,7 @@ class Surveyor:
         # paper selection by scibert vector embedding relevance scores
         # papers_selected = select_papers(searched_papers, query, num_papers=num_papers)
 
-        papers_highlighted, papers_selected = self.pdf_route(self.pdf_dir, self.txt_dir, self.img_dir, self.tab_dir, self.dump_dir,
+        papers_highlighted, papers_selected, cites = self.pdf_route(self.pdf_dir, self.txt_dir, self.img_dir, self.tab_dir, self.dump_dir,
                                             searched_papers)
 
         if weigh_authors:
@@ -1472,9 +1464,14 @@ class Surveyor:
         self.print_fn("conclusion_block:")
         self.print_fn(conclusion_block)
         '''
+        if query is None:
+            query = self.generate_title(' '.join([v for v in clustered_sections.values]))
 
         survey_file = 'A_Survey_on_' + query.replace(' ', '_') + '.txt'
         self.build_doc(clustered_sections, papers_standardized, query=query, filename=self.dump_dir + survey_file)
+
+        self.survey_print_fn("\n-citation-network: ")
+        self.survey_print_fn(cites)
 
         shutil.copytree('arxiv_data/', self.dump_dir + '/arxiv_data/')
         shutil.copy(self.dump_dir + survey_file, survey_file)

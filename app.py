@@ -2,6 +2,7 @@ from typing import List, Optional
 import streamlit as st
 import streamlit_pydantic as sp
 from pydantic import BaseModel, Field
+from PIL import Image
 
 from src.Surveyor import Surveyor
 
@@ -73,15 +74,17 @@ def survey_space(surveyor, download_placeholder):
                                'num_papers':session_data['research_keywords']})
         elif session_data['arxiv_ids'] != '':
             run_kwargs.update({'arxiv_ids':[id.strip() for id in session_data['arxiv_ids'].split(',')]})
-        st.json(run_kwargs)
         run_survey(**run_kwargs)
 
 
 if __name__ == '__main__':
-    st.title('Auto-Research V0.1 - Automated Survey generation from research keywords')
-    std_col, survey_col = st.columns(2)
-    std_col.header('execution log:')
-    survey_col.header('Generated_survey:')
-    download_placeholder = survey_col.container()
-    surveyor_obj = get_surveyor_instance(_print_fn=std_col.write, _survey_print_fn=survey_col.write)
-    survey_space(surveyor_obj, survey_col)
+    st.image(Image.open('logo_landscape.png'), use_column_width = 'always')
+    st.write('#### A no-code utility to generate a detailed well-cited survey with topic clustered sections' 
+             '(draft paper format) and other interesting artifacts from a single research query or a curated set of papers(arxiv ids).')
+    st.write('##### Data Provider: arXiv Open Archive Initiative OAI')
+    survey_row = st.container()
+    download_placeholder = st.container()
+    std_row = st.container()
+    std_row.write('#### execution log:')
+    surveyor_obj = get_surveyor_instance(_print_fn=std_row.write, _survey_print_fn=survey_row.write)
+    survey_space(surveyor_obj, download_placeholder)
