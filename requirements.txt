@@ -3,7 +3,6 @@ arxiv
 arxiv2bib
 boto3==1.9.118
 bert-extractive-summarizer
-fitz==0.0.1.dev2
 joblib
 keybert
 numpy
