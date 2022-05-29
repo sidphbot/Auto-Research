@@ -9,7 +9,7 @@ from streamlit_tags import st_tags_sidebar
 @st.experimental_singleton
 def get_surveyor_instance(_print_fn, _survey_print_fn):
      with st.spinner('Loading The-Surveyor ...'):
-        return Surveyor(_print_fn, _survey_print_fn, high_gpu=True)
+        return Surveyor(print_fn=_print_fn, survey_print_fn=_survey_print_fn, high_gpu=True)
 
 
 def run_survey(surveyor, download_placeholder, research_keywords=None, arxiv_ids=None, max_search=None, num_papers=None):
