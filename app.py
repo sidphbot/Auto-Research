@@ -41,7 +41,7 @@ def survey_space(surveyor):
 
 
 if __name__ == '__main__':
-    st.container().title('Auto-Research V0.1 - Automated Survey generation from research keywords')
+    st.title('Auto-Research V0.1 - Automated Survey generation from research keywords')
     std_col, survey_col = st.columns(2)
     std_col.header('execution log:')
     survey_col.header('Generated_survey:')
