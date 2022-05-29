@@ -18,6 +18,7 @@ except:
 
 from src.defaults import DEFAULTS_CPU_COMPAT, DEFAULTS_HIGH_GPU
 
+DEFAULTS = DEFAULTS_CPU_COMPAT
 
 class Surveyor:
     '''
@@ -78,7 +79,6 @@ class Surveyor:
             spacy.require_gpu()
 
         self.high_gpu = high_gpu
-        DEFAULTS = DEFAULTS_CPU_COMPAT
         if self.high_gpu:
             DEFAULTS = DEFAULTS_HIGH_GPU
 
@@ -135,7 +135,7 @@ class Surveyor:
                 self.ledtokenizer = LEDTokenizer.from_pretrained(ledmodel_name)
                 self.ledmodel = LEDForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
             else:
-                self.ledtokenizer = T5Tokenizer.from_pretrained(ledmodel_name)
+                self.ledtokenizer = AutoTokenizer.from_pretrained(ledmodel_name)
                 self.ledmodel = T5ForConditionalGeneration.from_pretrained(ledmodel_name).to(self.torch_device)
             self.ledmodel.eval()
             if not no_save_models:

@@ -11,6 +11,7 @@ pandas
 pdftotext
 Pillow==9.1.1
 PyMuPDF==1.19.6
+pdfminer3k
 requests
 scholarly
 scikit_learn
@@ -18,6 +19,9 @@ sentence_transformers
 sentencepiece
 setuptools
 spacy
+scispacy
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_scibert-0.5.0.tar.gz
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_lg-0.5.0.tar.gz
 streamlit
 summarizer
 tabula
