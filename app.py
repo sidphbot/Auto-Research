@@ -8,7 +8,7 @@ from src.Surveyor import Surveyor
 
 
 
-@st.experimental_singleton(show_spinner=True, suppress_st_warning=True)
+@st.experimental_singleton(suppress_st_warning=True)
 def get_surveyor_instance(_print_fn, _survey_print_fn):
      with st.spinner('Loading The-Surveyor ...'):
         return Surveyor(print_fn=_print_fn, survey_print_fn=_survey_print_fn, high_gpu=True)
@@ -26,14 +26,14 @@ def run_survey(surveyor, download_placeholder, research_keywords=None, arxiv_ids
 def show_survey_download(zip_file_name, survey_file_name, download_placeholder):
     with open(str(zip_file_name), "rb") as file:
         btn = download_placeholder.download_button(
-            label="Download extracted topic-clustered-highlights, images and tables as zip",
+            label="Download survey + extracted topic-clustered-highlights, images and tables as zip",
             data=file,
             file_name=str(zip_file_name)
         )
 
     with open(str(survey_file_name), "rb") as file:
         btn = download_placeholder.download_button(
-            label="Download detailed generated survey file",
+            label="Download only detailed generated survey file",
             data=file,
             file_name=str(survey_file_name)
         )
@@ -58,15 +58,24 @@ class ArxivIDsModel(BaseModel):
         '', description="Enter comma_separated arxiv ids for your curated set of papers (e.g. 2205.12755, 2205.10937, ...):"
     )
 
+if __name__ == '__main__':
+    st.sidebar.image(Image.open('logo_landscape.png'), use_column_width = 'always')
+    st.title('Auto-Research')
+    st.write('#### A no-code utility to generate a detailed well-cited survey with topic clustered sections' 
+             '(draft paper format) and other interesting artifacts from a single research query or a curated set of papers(arxiv ids).')
+    st.write('##### Data Provider: arXiv Open Archive Initiative OAI')
+    st.write('##### GitHub: https://github.com/sidphbot/Auto-Research')
+    download_placeholder = st.container()
 
-def survey_space(surveyor, download_placeholder):
     with st.sidebar.form(key="survey_keywords_form"):
         session_data = sp.pydantic_input(key="keywords_input_model", model=KeywordsModel)
         st.write('or')
         session_data.update(sp.pydantic_input(key="arxiv_ids_input_model", model=ArxivIDsModel))
         submit = st.form_submit_button(label="Submit")
+    st.sidebar.write('#### execution log:')
         
-    run_kwargs = {'surveyor':surveyor, 'download_placeholder':download_placeholder}
+    run_kwargs = {'surveyor':get_surveyor_instance(_print_fn=st.sidebar.write, _survey_print_fn=st.write), 
+                  'download_placeholder':download_placeholder}
     if submit:
         if session_data['research_keywords'] != '':
             run_kwargs.update({'research_keywords':session_data['research_keywords'], 
@@ -75,16 +84,3 @@ def survey_space(surveyor, download_placeholder):
         elif session_data['arxiv_ids'] != '':
             run_kwargs.update({'arxiv_ids':[id.strip() for id in session_data['arxiv_ids'].split(',')]})
         run_survey(**run_kwargs)
-
-
-if __name__ == '__main__':
-    st.image(Image.open('logo_landscape.png'), use_column_width = 'always')
-    st.write('#### A no-code utility to generate a detailed well-cited survey with topic clustered sections' 
-             '(draft paper format) and other interesting artifacts from a single research query or a curated set of papers(arxiv ids).')
-    st.write('##### Data Provider: arXiv Open Archive Initiative OAI')
-    survey_row = st.container()
-    download_placeholder = st.container()
-    std_row = st.container()
-    std_row.write('#### execution log:')
-    surveyor_obj = get_surveyor_instance(_print_fn=std_row.write, _survey_print_fn=survey_row.write)
-    survey_space(surveyor_obj, download_placeholder)

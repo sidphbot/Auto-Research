@@ -1,3 +1,4 @@
+from pathlib import Path
 from arxiv_public_data.fulltext import convert_directory_parallel
 from arxiv_public_data import internal_citations
 import torch
@@ -159,7 +160,7 @@ class Surveyor:
             if not no_save_models:
                 self.embedder.save(models_dir + "/embedder")
         else:
-            self.print_fn("\n-Initializing from previously saved models at" + models_dir)
+            self.print_fn("\n- Initializing from previously saved models at" + models_dir)
             self.title_tokenizer = AutoTokenizer.from_pretrained(title_model_name)
             self.title_model = AutoModelForSeq2SeqLM.from_pretrained(models_dir + "/title_model").to(self.torch_device)
             self.title_model.eval()
@@ -245,7 +246,7 @@ class Surveyor:
         papers = papers_meta[:self.num_papers]
         selected_papers = papers
         ids_none, papers, cites = self.fetch_papers(dump_dir, img_dir, papers, pdf_dir, tab_dir, txt_dir)
-        self.print_fn("\n-First stage paper collection complete, papers collected: \n" + ', '.join([p['id'] for p in papers]))
+        self.print_fn("\n- First stage paper collection complete, papers collected: \n" + ', '.join([p['id'] for p in papers]))
         new_papers = papers_meta[self.num_papers : self.num_papers + len(ids_none)]
         # _ = self.get_freq_cited(cites)
         '''
@@ -257,14 +258,14 @@ class Surveyor:
         '''
         selected_papers.extend(new_papers)
         _, new_papers, _ = self.fetch_papers(dump_dir, img_dir, new_papers, pdf_dir, tab_dir, txt_dir, repeat=True)
-        self.print_fn("\n-Second stage paper collection complete, new papers collected: \n" + ', '.join([p['id'] for p in new_papers]))
+        self.print_fn("\n- Second stage paper collection complete, new papers collected: \n" + ', '.join([p['id'] for p in new_papers]))
         papers.extend(new_papers)
 
         joblib.dump(papers, dump_dir + 'papers_extracted_pdf_route.dmp')
         copy_tree(img_dir, dump_dir + os.path.basename(img_dir))
         copy_tree(tab_dir, dump_dir + os.path.basename(tab_dir))
 
-        self.print_fn("\n-Extracting section-wise highlights.. ")
+        self.print_fn("\n- Extracting section-wise highlights.. ")
         papers = self.extract_highlights(papers)
 
         return papers, selected_papers, cites
@@ -339,11 +340,11 @@ class Surveyor:
     def build_doc(self, research_sections, papers, query=None, filename='survey.txt'):
 
         import arxiv2bib
-        self.print_fn("\n-building bibliography entries.. ")
+        self.print_fn("\n- building bibliography entries.. ")
         bibentries = arxiv2bib.arxiv2bib([p['id'] for p in papers])
         bibentries = [r.bibtex() for r in bibentries]
 
-        self.print_fn("\n-building final survey file .. at "+ filename)
+        self.print_fn("\n- building final survey file .. at "+ filename)
         file = open(filename, 'w+')
         if query is None:
             query = 'Internal(existing) research'
@@ -772,7 +773,7 @@ class Surveyor:
             res = self.model(" ".join([l.lower() for l in lines]), ratio=0.5, )
         res_doc = self.nlp(res)
         res_lines = set([str(sent) for sent in list(res_doc.sents)])
-        # self.print_fn("\n-".join(res_sents))
+        # self.print_fn("\n- ".join(res_sents))
         with torch.no_grad():
             keywords = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])), stop_words='english')
             keyphrases = self.kw_model.extract_keywords(str(" ".join([l.lower() for l in lines])),
@@ -798,14 +799,14 @@ class Surveyor:
         return papers
 
     def extract_structure(self, papers, pdf_dir, txt_dir, img_dir, dump_dir, tab_dir, tables=False):
-        self.print_fn("\n-extracting sections.. ")
+        self.print_fn("\n- extracting sections.. ")
         papers, ids_none = self.extract_parts(papers, txt_dir, dump_dir)
 
-        self.print_fn("\n-extracting images.. for future correlation use-cases ")
+        self.print_fn("\n- extracting images.. for future correlation use-cases ")
         papers = self.extract_images(papers, pdf_dir, img_dir)
 
         if tables:
-            self.print_fn("\n-extracting tables.. for future correlation use-cases ")
+            self.print_fn("\n- extracting tables.. for future correlation use-cases ")
             papers = self.extract_tables(papers, pdf_dir, tab_dir)
 
         return papers, ids_none
@@ -1061,7 +1062,7 @@ class Surveyor:
         for p in papers:
             if p['id'] == pid:
                 return p
-        self.print_fn("\n-paper not found by file, \nfile: "+file+"\nall papers: "+', '.join([p['id'] for p in papers]))
+        self.print_fn("\n- paper not found by file, \nfile: "+file+"\nall papers: "+', '.join([p['id'] for p in papers]))
 
 
     def alpha_length(self, s):
@@ -1195,7 +1196,7 @@ class Surveyor:
             else:
                 discarded_ids.append(urlparse(result.entry_id).path.split('/')[-1].split('v')[0])
 
-        self.print_fn("\n-Papers discarded due to id error [arxiv api bug: #74] :\n" + str(discarded_ids))
+        self.print_fn("\n- Papers discarded due to id error [arxiv api bug: #74] :\n" + str(discarded_ids))
 
         return results, searched_papers
 
@@ -1329,7 +1330,7 @@ class Surveyor:
         self.print_fn("outputs: " + outputs)
         return outputs
 
-    def zip_outputs(self, dump_dir, query):
+    def zip_outputs(self, dump_dir, zip_name):
         import zipfile
         def zipdir(path, ziph):
             # ziph is zipfile handle
@@ -1339,10 +1340,9 @@ class Surveyor:
                                os.path.relpath(os.path.join(root, file),
                                                os.path.join(path, '../..')))
 
-        zip_name = 'arxiv_dumps_'+query.replace(' ', '_')+'.zip'
+        
         zipf = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED)
         zipdir(dump_dir, zipf)
-        return zip_name
 
     def survey(self, query=None, id_list=None, max_search=None, num_papers=None, debug=False, weigh_authors=False):
         import joblib
@@ -1354,10 +1354,10 @@ class Surveyor:
         if (query is None) and (id_list is None):
             raise ValueError('please provide a base to survey on: list of arxiv IDs or a few research keywords')
         # arxiv api relevance search and data preparation
-        self.print_fn("\n-searching arXiv for top 100 papers.. ")
+        self.print_fn("\n- searching arXiv for top 100 papers.. ")
         results, searched_papers = self.search(query, id_list, max_search=max_search)
         joblib.dump(searched_papers, self.dump_dir + 'papers_metadata.dmp')
-        self.print_fn("\n-found " + str(len(searched_papers)) + " papers")
+        self.print_fn("\n- found " + str(len(searched_papers)) + " papers")
 
         # paper selection by scibert vector embedding relevance scores
         # papers_selected = select_papers(searched_papers, query, num_papers=num_papers)
@@ -1370,23 +1370,23 @@ class Surveyor:
 
         joblib.dump(papers_highlighted, self.dump_dir + 'papers_highlighted.dmp')
 
-        self.print_fn("\n-Standardizing known section headings per paper.. ")
+        self.print_fn("\n- Standardizing known section headings per paper.. ")
         papers_standardized = self.standardize_headings(papers_highlighted)
         joblib.dump(papers_standardized, self.dump_dir + 'papers_standardized.dmp')
 
-        self.print_fn("\n-Building paper-wise corpus.. ")
+        self.print_fn("\n- Building paper-wise corpus.. ")
         corpus = self.build_corpus(papers_highlighted, searched_papers)
         joblib.dump(corpus, self.dump_dir + 'corpus.dmp')
 
-        self.print_fn("\n-Building section-wise corpus.. ")
+        self.print_fn("\n- Building section-wise corpus.. ")
         corpus_sectionwise = self.build_corpus_sectionwise(papers_standardized)
         joblib.dump(corpus_sectionwise, self.dump_dir + 'corpus_sectionwise.dmp')
 
-        self.print_fn("\n-Building basic research highlights.. ")
+        self.print_fn("\n- Building basic research highlights.. ")
         research_blocks = self.build_basic_blocks(corpus_sectionwise, corpus)
         joblib.dump(research_blocks, self.dump_dir + 'research_blocks.dmp')
 
-        self.print_fn("\n-Reducing corpus to lines.. ")
+        self.print_fn("\n- Reducing corpus to lines.. ")
         corpus_lines = self.get_corpus_lines(corpus)
         joblib.dump(corpus_lines, self.dump_dir + 'corpus_lines.dmp')
 
@@ -1420,7 +1420,7 @@ class Surveyor:
         '''
         # self.print_fn("corpus types:"+ str(np.unique([type(txt) for k,txt in corpus.items()])))
 
-        self.print_fn("\n-Building abstract.. ")
+        self.print_fn("\n- Building abstract.. ")
         abstract_block = self.get_abstract(corpus_lines, corpus_sectionwise, research_blocks)
         joblib.dump(abstract_block, self.dump_dir + 'abstract_block.dmp')
         '''
@@ -1429,7 +1429,7 @@ class Surveyor:
         self.print_fn(abstract_block)
         '''
 
-        self.print_fn("\n-Building introduction.. ")
+        self.print_fn("\n- Building introduction.. ")
         intro_block = self.get_intro(corpus_sectionwise, research_blocks)
         joblib.dump(intro_block, self.dump_dir + 'intro_block.dmp')
         '''
@@ -1437,7 +1437,7 @@ class Surveyor:
         self.print_fn("intro_block:")
         self.print_fn(intro_block)
         '''
-        self.print_fn("\n-Building custom sections.. ")
+        self.print_fn("\n- Building custom sections.. ")
         clustered_sections, clustered_sentences = self.get_clusters(papers_standardized, searched_papers)
         joblib.dump(clustered_sections, self.dump_dir + 'clustered_sections.dmp')
         joblib.dump(clustered_sentences, self.dump_dir + 'clustered_sentences.dmp')
@@ -1455,7 +1455,7 @@ class Surveyor:
         clustered_sections['introduction'] = intro_block
         joblib.dump(clustered_sections, self.dump_dir + 'research_sections.dmp')
 
-        self.print_fn("\n-Building conclusion.. ")
+        self.print_fn("\n- Building conclusion.. ")
         conclusion_block = self.get_conclusion(clustered_sections)
         joblib.dump(conclusion_block, self.dump_dir + 'conclusion_block.dmp')
         clustered_sections['conclusion'] = conclusion_block
@@ -1465,19 +1465,22 @@ class Surveyor:
         self.print_fn(conclusion_block)
         '''
         if query is None:
-            query = self.generate_title(' '.join([v for v in clustered_sections.values]))
+            query = self.generate_title(' '.join([v for v in clustered_sections.values()]))
 
         survey_file = 'A_Survey_on_' + query.replace(' ', '_') + '.txt'
-        self.build_doc(clustered_sections, papers_standardized, query=query, filename=self.dump_dir + survey_file)
+        survey_file = Path(self.dump_dir).resolve() / survey_file
+        self.build_doc(clustered_sections, papers_standardized, query=query, filename=str(survey_file))
 
         self.survey_print_fn("\n-citation-network: ")
         self.survey_print_fn(cites)
 
         shutil.copytree('arxiv_data/', self.dump_dir + '/arxiv_data/')
-        shutil.copy(self.dump_dir + survey_file, survey_file)
         assert (os.path.exists(survey_file))
-        output_zip = self.zip_outputs(self.dump_dir, query)
-        self.print_fn("\n-Survey complete.. \nSurvey file path :" + os.path.abspath(
-            survey_file) + "\nAll outputs zip path :" + os.path.abspath(self.dump_dir + output_zip))
+        
+        zip_name = 'arxiv_dumps_'+query.replace(' ', '_')+'.zip'
+        zip_name = Path(self.dump_dir).parent.resolve() / zip_name
+        self.zip_outputs(self.dump_dir, str(zip_name))
+        self.print_fn("\n- Survey complete.. \nSurvey file path :" + str(survey_file) + 
+                      "\nAll outputs zip path :" + str(zip_name))
 
-        return os.path.abspath(self.dump_dir + output_zip), os.path.abspath(survey_file)
+        return str(zip_name.resolve()), str(zip_name.resolve())
