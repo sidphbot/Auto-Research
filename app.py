@@ -52,9 +52,9 @@ def survey_space(surveyor, download_placeholder):
     st.sidebar.write('or')
 
     arxiv_ids = st_tags_sidebar(
-                label='# Enter Keywords:',
+                label='# Enter arxiv ids for your curated set of papers:',
                 value=[],
-                text='Press enter to add more',
+                text='Press enter to add more (e.g. 1605.08386v1, ...)',
                 maxtags = 6,
                 key='arxiv_ids')
 
