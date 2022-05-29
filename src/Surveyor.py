@@ -18,7 +18,7 @@ except:
 
 from src.defaults import DEFAULTS_CPU_COMPAT, DEFAULTS_HIGH_GPU
 
-DEFAULTS = DEFAULTS_CPU_COMPAT
+
 
 class Surveyor:
     '''
@@ -79,15 +79,16 @@ class Surveyor:
             spacy.require_gpu()
 
         self.high_gpu = high_gpu
+        self.DEFAULTS = DEFAULTS_CPU_COMPAT
         if self.high_gpu:
-            DEFAULTS = DEFAULTS_HIGH_GPU
+            self.DEFAULTS = DEFAULTS_HIGH_GPU
 
         if not kw_model_name:
-            kw_model_name = DEFAULTS["kw_model_name"]
-        self.num_papers = DEFAULTS['num_papers']
-        self.max_search = DEFAULTS['max_search']
+            kw_model_name = self.DEFAULTS["kw_model_name"]
+        self.num_papers = self.DEFAULTS['num_papers']
+        self.max_search = self.DEFAULTS['max_search']
         if not models_dir:
-            models_dir = DEFAULTS['models_dir']
+            models_dir = self.DEFAULTS['models_dir']
 
         models_found = False
         if os.path.exists(models_dir) and not no_save_models:
@@ -95,17 +96,17 @@ class Surveyor:
                 models_found = True
 
         if not title_model_name:
-            title_model_name = DEFAULTS["title_model_name"]
+            title_model_name = self.DEFAULTS["title_model_name"]
         if not ex_summ_model_name:
-            ex_summ_model_name = DEFAULTS["ex_summ_model_name"]
+            ex_summ_model_name = self.DEFAULTS["ex_summ_model_name"]
         if not ledmodel_name:
-            ledmodel_name = DEFAULTS["ledmodel_name"]
+            ledmodel_name = self.DEFAULTS["ledmodel_name"]
         if not embedder_name:
-            embedder_name = DEFAULTS["embedder_name"]
+            embedder_name = self.DEFAULTS["embedder_name"]
         if not nlp_name:
-            nlp_name = DEFAULTS["nlp_name"]
+            nlp_name = self.DEFAULTS["nlp_name"]
         if not similarity_nlp_name:
-            similarity_nlp_name = DEFAULTS["similarity_nlp_name"]
+            similarity_nlp_name = self.DEFAULTS["similarity_nlp_name"]
 
         if refresh_models or not models_found:
             print(f'\nInitializing models {"and saving (about 5GB)" if not no_save_models else ""}')
@@ -183,27 +184,27 @@ class Surveyor:
         if pdf_dir:
             self.pdf_dir = pdf_dir
         else:
-            self.pdf_dir = DEFAULTS["pdf_dir"]
+            self.pdf_dir = self.DEFAULTS["pdf_dir"]
 
         if txt_dir:
             self.txt_dir = txt_dir
         else:
-            self.txt_dir = DEFAULTS["txt_dir"]
+            self.txt_dir = self.DEFAULTS["txt_dir"]
 
         if img_dir:
             self.img_dir = img_dir
         else:
-            self.img_dir = DEFAULTS["img_dir"]
+            self.img_dir = self.DEFAULTS["img_dir"]
 
         if tab_dir:
             self.tab_dir = tab_dir
         else:
-            self.tab_dir = DEFAULTS["tab_dir"]
+            self.tab_dir = self.DEFAULTS["tab_dir"]
 
         if dump_dir:
             self.dump_dir = dump_dir
         else:
-            self.dump_dir = DEFAULTS["dump_dir"]
+            self.dump_dir = self.DEFAULTS["dump_dir"]
 
         dirs = [self.pdf_dir, self.txt_dir, self.img_dir, self.tab_dir, self.dump_dir]
         if sum([True for dir in dirs if 'arxiv_data/' in dir]):
@@ -520,7 +521,7 @@ class Surveyor:
             optimal_k = self.model.calculate_optimal_k(' '.join(abs_lines), k_max=10)
         # Perform kmean clustering
 
-        clustering_model = KMeans(n_clusters=optimal_k, n_init=20, n_jobs=-1)
+        clustering_model = KMeans(n_clusters=optimal_k, n_init=20)
         # clustering_model = AgglomerativeClustering(n_clusters=optimal_k, affinity='cosine', linkage='average') #, affinity='cosine', linkage='average', distance_threshold=0.4)
         clustering_model.fit(corpus_embeddings)
         cluster_assignment = clustering_model.labels_
@@ -560,7 +561,7 @@ class Surveyor:
             optimal_k = self.model.calculate_optimal_k(' '.join(abs_lines), k_max=10)
         # Perform kmean clustering
 
-        clustering_model = KMeans(n_clusters=optimal_k, n_init=20, n_jobs=-1)
+        clustering_model = KMeans(n_clusters=optimal_k, n_init=20)
         # clustering_model = AgglomerativeClustering(n_clusters=optimal_k, affinity='cosine', linkage='average') #, affinity='cosine', linkage='average', distance_threshold=0.4)
         clustering_model.fit(corpus_embeddings)
         cluster_assignment = clustering_model.labels_
@@ -1337,9 +1338,9 @@ class Surveyor:
         import joblib
         import os, shutil
         if not max_search:
-            max_search = DEFAULTS['max_search']
+            max_search = self.DEFAULTS['max_search']
         if not num_papers:
-            num_papers = DEFAULTS['num_papers']
+            num_papers = self.DEFAULTS['num_papers']
         # arxiv api relevance search and data preparation
         print("\nsearching arXiv for top 100 papers.. ")
         results, searched_papers = self.search(query, max_search=max_search)
