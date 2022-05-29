@@ -506,10 +506,7 @@ class Surveyor:
         for p in papers:
             for section in p['sections']:
                 if len(section['highlights']) > 0:
-                    if self.high_gpu:
-                        content = self.generate_title(section['highlights'])
-                    else:
-                        content = self.extractive_summary(''.join(section['highlights']))
+                    content = self.extractive_summary(''.join(section['highlights']))
                     docs.append(content)
         selected_pids = [p['id'] for p in papers]
         meta_abs = []
