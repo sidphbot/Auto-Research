@@ -1,12 +1,13 @@
+from typing import List, Optional
 import streamlit as st
-import pandas as pd
-import numpy as np
+import streamlit_pydantic as sp
+from pydantic import BaseModel, Field
 
 from src.Surveyor import Surveyor
-from streamlit_tags import st_tags_sidebar
 
 
-@st.experimental_singleton
+
+@st.experimental_singleton(show_spinner=True, suppress_st_warning=True)
 def get_surveyor_instance(_print_fn, _survey_print_fn):
      with st.spinner('Loading The-Surveyor ...'):
         return Surveyor(print_fn=_print_fn, survey_print_fn=_survey_print_fn, high_gpu=True)
@@ -39,29 +40,71 @@ def show_survey_download(zip_file_name, survey_file_name, download_placeholder):
             )
 
 
-def survey_space(surveyor, download_placeholder):
+class KeywordsModel(BaseModel):
+    research_keywords: Optional[str] =  Field(
+        '', description="Enter your research keywords:"
+    )
+    max_search: int = Field(
+        10, ge=1, le=50, multiple_of=1,
+        description="num_papers_to_search:"
+    )
+    num_papers: int = Field(
+        3, ge=1, le=8, multiple_of=1, 
+        description="num_papers_to_select:"
+    )
 
+
+class ArxivIDsModel(BaseModel):
+    arxiv_ids: Optional[List[str]] =  Field(
+        [], max_items=8, regex=r"^[0-9]+\.[0-9]+$", description="Enter arxiv ids for your curated set of papers (e.g. 2205.12755, 2205.10937, ...):"
+    )
+
+
+def survey_space(surveyor, download_placeholder):
+    with st.sidebar.form(key="survey_keywords_form"):
+        session_data = sp.pydantic_input(key="keywords_input_model", model=KeywordsModel)
+        st.write('or')
+        session_data.update(sp.pydantic_input(key="arxiv_ids_input_model", model=ArxivIDsModel))
+        submit = st.form_submit_button(label="Submit")
+        
+    run_kwargs = {'surveyor':surveyor, 'download_placeholder':download_placeholder}
+    if submit:
+        if session_data['research_keywords'] != '':
+            run_kwargs.update({'research_keywords':session_data['research_keywords'], 
+                               'max_search':session_data['research_keywords'], 
+                               'num_papers':session_data['research_keywords']})
+        elif len(session_data['arxiv_ids']):
+            run_kwargs.update({'arxiv_ids':session_data['arxiv_ids']})
+        run_survey(**run_kwargs)
+    
+    '''
     form = st.sidebar.form(key='survey_form')
-    research_keywords = form.text_input("What would you like to research in today?", key='research_keywords')
+    research_keywords = form.text_input("Enter your research keywords:", key='research_keywords', value='')
     max_search = form.number_input("num_papers_to_search", help="maximium number of papers to glance through - defaults to 20", 
                              min_value=1, max_value=50, value=10, step=1, key='max_search')
     num_papers = form.number_input("num_papers_to_select", help="maximium number of papers to select and analyse - defaults to 8",
                              min_value=1, max_value=8, value=2, step=1, key='num_papers')
-    submit = form.form_submit_button('Submit')
 
-    st.sidebar.write('or')
+    form.write('or')
 
-    arxiv_ids = st_tags_sidebar(
-                label='# Enter arxiv ids for your curated set of papers:',
+    arxiv_ids = st_sidebar_tags(
+                label='Enter arxiv ids for your curated set of papers (1-by-1):',
                 value=[],
-                text='Press enter to add more (e.g. 1605.08386v1, ...)',
+                text='Press enter to add more (e.g. 2205.12755, 2205.10937, 1605.08386v1 ...)',
                 maxtags = 6,
                 key='arxiv_ids')
-
+                
+    submit = form.form_submit_button('Submit')
+    
+    
+    run_kwargs = {'surveyor':surveyor, 'download_placeholder':download_placeholder}
     if submit:
-        run_survey(surveyor, download_placeholder, research_keywords, max_search, num_papers)
-    elif len(arxiv_ids):
-        run_survey(surveyor, download_placeholder, arxiv_ids)
+        if research_keywords != '':
+            run_kwargs.update({'research_keywords':research_keywords, 'max_search':max_search, 'num_papers':num_papers})
+        elif len(arxiv_ids):
+            run_kwargs.update({'arxiv_ids':arxiv_ids})
+        run_survey(**run_kwargs)
+    '''
 
 
 
