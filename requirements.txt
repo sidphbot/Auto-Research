@@ -9,7 +9,7 @@ numpy
 pandas
 pdftotext
 Pillow==9.1.1
-PyMuPDF==1.19.6
+PyMuPDF
 pdfminer3k
 requests
 scholarly

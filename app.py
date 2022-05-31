@@ -3,37 +3,51 @@ import streamlit as st
 import streamlit_pydantic as sp
 from pydantic import BaseModel, Field
 from PIL import Image
+import tempfile
+from pathlib import Path
 
 from src.Surveyor import Surveyor
 
 
-
 @st.experimental_singleton(suppress_st_warning=True)
 def get_surveyor_instance(_print_fn, _survey_print_fn):
-     with st.spinner('Loading The-Surveyor ...'):
+     with st.spinner('Loading The-Researcher ...'):
         return Surveyor(print_fn=_print_fn, survey_print_fn=_survey_print_fn, high_gpu=True)
 
 
 def run_survey(surveyor, download_placeholder, research_keywords=None, arxiv_ids=None, max_search=None, num_papers=None):
+    import hashlib
+    import time
+
+    hash = hashlib.sha1()
+    hash.update(str(time.time()))
+    temp_hash = hash.hexdigest()
+    survey_root = Path(temp_hash).resolve()
+    dir_args = {f'{dname}_dir': survey_root / dname for dname in ['pdf', 'txt', 'img', 'tab', 'dump']}
+    for d in dir_args.values():
+        d.mkdir(exist_ok=True, parents=True)
+    print(survey_root)
+    print(dir_args)
+    dir_args = {k: str(v.resolve()) for k, v in dir_args.items()}
     zip_file_name, survey_file_name = surveyor.survey(research_keywords, 
-                                                      arxiv_ids,
-                                                      max_search=max_search, 
-                                                      num_papers=num_papers
-                                                     )
+                                                        arxiv_ids,
+                                                        max_search=max_search, 
+                                                        num_papers=num_papers
+                                                        **dir_args)
     show_survey_download(zip_file_name, survey_file_name, download_placeholder)
 
 
 def show_survey_download(zip_file_name, survey_file_name, download_placeholder):
     with open(str(zip_file_name), "rb") as file:
         btn = download_placeholder.download_button(
-            label="Download survey + extracted topic-clustered-highlights, images and tables as zip",
+            label="Download extracted topic-clustered-highlights, images and tables as zip",
             data=file,
             file_name=str(zip_file_name)
         )
 
     with open(str(survey_file_name), "rb") as file:
         btn = download_placeholder.download_button(
-            label="Download only detailed generated survey file",
+            label="Download detailed generated survey file",
             data=file,
             file_name=str(survey_file_name)
         )
@@ -74,13 +88,15 @@ if __name__ == '__main__':
         submit = st.form_submit_button(label="Submit")
     st.sidebar.write('#### execution log:')
         
-    run_kwargs = {'surveyor':get_surveyor_instance(_print_fn=st.sidebar.write, _survey_print_fn=st.write), 
+    run_kwargs = {'surveyor':get_surveyor_instance(_print_fn=st.sidebar.write, _survey_print_fn=st.write),
                   'download_placeholder':download_placeholder}
     if submit:
         if session_data['research_keywords'] != '':
             run_kwargs.update({'research_keywords':session_data['research_keywords'], 
-                               'max_search':session_data['research_keywords'], 
-                               'num_papers':session_data['research_keywords']})
+                               'max_search':session_data['max_search'], 
+                               'num_papers':session_data['num_papers']})
         elif session_data['arxiv_ids'] != '':
             run_kwargs.update({'arxiv_ids':[id.strip() for id in session_data['arxiv_ids'].split(',')]})
-        run_survey(**run_kwargs)
+
+        #run_survey(**run_kwargs)
+        

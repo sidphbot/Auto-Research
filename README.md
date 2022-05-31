@@ -1,3 +1,15 @@
+---
+title: Researcher
+emoji: 🤓
+colorFrom: gray
+colorTo: pink
+sdk: streamlit
+sdk_version: 1.2.0
+app_file: app.py
+pinned: false
+---
+
+
 # Auto-Research
 ![Auto-Research][logo]
 
@@ -268,4 +280,3 @@ optional arguments:
 
 
 Please cite this repo if it helped you :)
-    
