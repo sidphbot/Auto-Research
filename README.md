@@ -278,7 +278,7 @@ optional arguments:
 - Tables extracted from papers(optional)
 - Corpus of metadata highlights/text of top 100 papers as a re-usable pure python joblib dump
 
-This work builds upon these fantastic models for various nlp sub-tasks required in this algorithm out there for researchers and devs like us
+This work builds upon these fantastic models (for various nlp sub-tasks) out there for researchers and devs like us
 https://huggingface.co/Callidior/bert2bert-base-arxiv-titlegen
 https://huggingface.co/allenai/scibert_scivocab_uncased
 https://huggingface.co/allenai/led-large-16384-arxiv
