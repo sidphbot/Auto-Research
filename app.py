@@ -20,7 +20,7 @@ def run_survey(surveyor, download_placeholder, research_keywords=None, arxiv_ids
     import time
 
     hash = hashlib.sha1()
-    hash.update(str(time.time()))
+    hash.update(str(time.time()).encode('utf-8'))
     temp_hash = hash.hexdigest()
     survey_root = Path(temp_hash).resolve()
     dir_args = {f'{dname}_dir': survey_root / dname for dname in ['pdf', 'txt', 'img', 'tab', 'dump']}
@@ -98,5 +98,5 @@ if __name__ == '__main__':
         elif session_data['arxiv_ids'] != '':
             run_kwargs.update({'arxiv_ids':[id.strip() for id in session_data['arxiv_ids'].split(',')]})
 
-        #run_survey(**run_kwargs)
+        run_survey(**run_kwargs)
         

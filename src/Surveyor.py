@@ -91,7 +91,7 @@ class Surveyor:
 
         models_found = False
         if os.path.exists(models_dir) and not no_save_models:
-            if len(os.listdir(models_dir)) > 6:
+            if len(os.listdir(models_dir)) > 3:
                 models_found = True
 
         if not title_model_name:
