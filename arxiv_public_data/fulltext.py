@@ -24,7 +24,7 @@ RE_REPEATS = r'(\(cid:\d+\)|lllll|\.\.\.\.\.|\*\*\*\*\*)'
 def reextension(filename: str, extension: str) -> str:
     """ Give a filename a new extension """
     name, _ = os.path.splitext(filename)
-    return '{}.{}'.format(name, extension)
+    return f'{name}.{extension}'
 
 
 def average_word_length(txt):
@@ -43,8 +43,7 @@ def average_word_length(txt):
     #txt = re.subn(RE_REPEATS, '', txt)[0]
     nw = len(txt.split())
     nc = len(txt)
-    avgw = nc / (nw + 1)
-    return avgw
+    return nc / (nw + 1)
 
 
 def process_timeout(cmd, timeout):
@@ -71,7 +70,7 @@ def run_pdf2txt(pdffile: str, timelimit: int=TIMELIMIT, options: str=''):
     output : str
         Full plain text output
     """
-    log.debug('Running {} on {}'.format(PDF2TXT, pdffile))
+    log.debug(f'Running {PDF2TXT} on {pdffile}')
     tmpfile = reextension(pdffile, 'pdf2txt')
 
     cmd = '{cmd} {options} -o "{output}" "{pdf}"'.format(
@@ -101,7 +100,7 @@ def run_pdftotext(pdffile: str, timelimit: int = TIMELIMIT) -> str:
     output : str
         Full plain text output
     """
-    log.debug('Running {} on {}'.format(PDFTOTEXT, pdffile))
+    log.debug(f'Running {PDFTOTEXT} on {pdffile}')
     tmpfile = reextension(pdffile, 'pdftotxt')
 
     cmd = '{cmd} "{pdf}" "{output}"'.format(
@@ -161,7 +160,7 @@ def fulltext(pdffile: str, timelimit: int = TIMELIMIT):
         raise FileNotFoundError(pdffile)
 
     if os.stat(pdffile).st_size == 0:  # file is empty
-        raise RuntimeError('"{}" is an empty file'.format(pdffile))
+        raise RuntimeError(f'"{pdffile}" is an empty file')
 
     try:
         output = run_pdftotext(pdffile, timelimit=timelimit)
@@ -188,9 +187,7 @@ def fulltext(pdffile: str, timelimit: int = TIMELIMIT):
     wordlength = average_word_length(output)
 
     if wordlength > 45:
-        raise RuntimeError(
-            'No accurate text could be extracted from "{}"'.format(pdffile)
-        )
+        raise RuntimeError(f'No accurate text could be extracted from "{pdffile}"')
 
     try:
         os.remove(reextension(pdffile, 'pdftotxt'))  # remove the tempfile
@@ -255,8 +252,8 @@ def convert_directory(path: str, timelimit: int = TIMELIMIT):
     globber = os.path.join(path, '*.pdf')
     pdffiles = sorted_files(globber)
 
-    log.info('Searching "{}"...'.format(globber))
-    log.info('Found: {} pdfs'.format(len(pdffiles)))
+    log.info(f'Searching "{globber}"...')
+    log.info(f'Found: {len(pdffiles)} pdfs')
 
     for pdffile in pdffiles:
         txtfile = reextension(pdffile, 'txt')
@@ -271,7 +268,7 @@ def convert_directory(path: str, timelimit: int = TIMELIMIT):
             with open(txtfile, 'w') as f:
                 f.write(text)
         except Exception as e:
-            log.error("Conversion failed for '{}'".format(pdffile))
+            log.error(f"Conversion failed for '{pdffile}'")
             log.exception(e)
             continue
 
@@ -297,8 +294,8 @@ def convert_directory_parallel(path: str, processes: int, timelimit: int = TIMEL
     globber = os.path.join(path, '**/*.pdf') # search expression for glob.glob
     pdffiles = sorted_files(globber)  # a list of path
 
-    log.info('Searching "{}"...'.format(globber))
-    log.info('Found: {} pdfs'.format(len(pdffiles)))
+    log.info(f'Searching "{globber}"...')
+    log.info(f'Found: {len(pdffiles)} pdfs')
 
     pool = Pool(processes=processes)
     result = pool.map(partial(convert_safe, timelimit=timelimit), pdffiles)
@@ -311,7 +308,7 @@ def convert_safe(pdffile: str, timelimit: int = TIMELIMIT):
     try:
         convert(pdffile, timelimit=timelimit)
     except Exception as e:
-        log.error('File conversion failed for {}: {}'.format(pdffile, e))
+        log.error(f'File conversion failed for {pdffile}: {e}')
 
 
 def convert(path: str, skipconverted=True, timelimit: int = TIMELIMIT) -> str:
@@ -332,7 +329,7 @@ def convert(path: str, skipconverted=True, timelimit: int = TIMELIMIT) -> str:
         Location of text file.
     """
     if not os.path.exists(path):
-        raise RuntimeError('No such path: %s' % path)
+        raise RuntimeError(f'No such path: {path}')
     outpath = reextension(path, 'txt')
 
     if os.path.exists(outpath):

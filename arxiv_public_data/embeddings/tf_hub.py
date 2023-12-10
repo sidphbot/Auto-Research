@@ -61,7 +61,7 @@ def elmo_strings(batches, filename, batchsize=32):
 
         for i, batch in enumerate(batches):
             # grab mean-pooling of contextualized word reps
-            logger.info("Computing/saving batch {}".format(i))
+            logger.info(f"Computing/saving batch {i}")
             with open(filename, 'ab') as fout:
                 pickle.dump(sess.run(
                     embeddings, feed_dict={text_input: batch}
@@ -125,7 +125,7 @@ def universal_sentence_encoder_lite(batches, filename, spm_path, batchsize=32):
         sess.run(init_op)
         for i, batch in enumerate(batches):
             values, indices, dense_shape = process_to_IDs_in_sparse_format(sp, batch)
-            logger.info("Computing/saving batch {}".format(i))
+            logger.info(f"Computing/saving batch {i}")
             emb = sess.run(
                 embeddings, 
                 feed_dict={
@@ -180,6 +180,6 @@ def create_save_embeddings(batches, filename, encoder, headers=[], encoder_args=
         for h in headers:
             pickle.dump(h, fout)
 
-    logger.info("Saving embeddings to {}".format(savename))
+    logger.info(f"Saving embeddings to {savename}")
     encoder(batches, savename, *encoder_args, 
             **encoder_kwargs)

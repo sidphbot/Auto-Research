@@ -160,7 +160,7 @@ def _parse_author_affil_split(author_line: str) -> Dict:
                 2), match.group(3), match.group(4))
             author_entry = [s, match.group(1), '']
         elif mtype == 'name-prefix-name':
-            s = '{} {}'.format(match.group(2), match.group(3))
+            s = f'{match.group(2)} {match.group(3)}'
             author_entry = [s, match.group(1), '']
         elif mtype == 'name-name-prefix':
             author_entry = [match.group(2), match.group(1), match.group(3)]
@@ -197,9 +197,8 @@ def _remove_double_commas(items: List[str]) -> List[str]:
     for pt in items:
         if pt == ',' and last == ',':
             continue
-        else:
-            parts.append(pt)
-            last = pt
+        parts.append(pt)
+        last = pt
     return parts
 
 
@@ -210,13 +209,12 @@ def _tidy_name(name: str) -> str:
     return name
 
 
-def _collaboration_at_start(names: List[str]) \
-        -> Tuple[List[str], List[List[str]], int]:
+def _collaboration_at_start(names: List[str]) -> Tuple[List[str], List[List[str]], int]:
     """Perform special handling of collaboration at start."""
     author_list = []
 
     back_propagate_affiliations_to = 0
-    while len(names) > 0:
+    while names:
         m = re.search(r'([a-z0-9\s]+\s+(collaboration|group|team))',
                       names[0], flags=re.IGNORECASE)
         if not m:
@@ -228,13 +226,13 @@ def _collaboration_at_start(names: List[str]) \
         # Remove from names
         names.pop(0)
         # Also swallow and following comma or colon
-        if names and (names[0] == ',' or names[0] == ':'):
+        if names and names[0] in [',', ':']:
             names.pop(0)
 
     return names, author_list, back_propagate_affiliations_to
 
 
-def _enum_collaboration_at_end(author_line: str)->Dict:
+def _enum_collaboration_at_end(author_line: str) -> Dict:
     """Get separate set of enumerated affiliations from end of author_line."""
     # Now see if we have a separate set of enumerated affiliations
     # This is indicated by finding '(\s*('
@@ -247,9 +245,7 @@ def _enum_collaboration_at_end(author_line: str)->Dict:
 
     # Now expect to have '1) affil1 (2) affil2 (3) affil3'
     for affil in affils.split('('):
-        # Now expect `1) affil1 ', discard if no match
-        m = re.match(r'^(\d+)\)\s*(\S.*\S)\s*$', affil)
-        if m:
+        if m := re.match(r'^(\d+)\)\s*(\S.*\S)\s*$', affil):
             enumaffils[m.group(1)] = re.sub(r'[\.,\s]*$', '', m.group(2))
 
     return enumaffils
@@ -266,7 +262,7 @@ def _add_affiliation(author_line: str,
     Smith B(labX) Smith B(1) Smith B(1, 2) Smith B(1 & 2) Smith B(1 and 2)
     """
     en = re.escape(name)
-    namerex = r'{}\s*\(([^\(\)]+)'.format(en.replace(' ', 's*'))
+    namerex = f"{en.replace(' ', 's*')}\s*\(([^\(\)]+)"
     m = re.search(namerex, author_line, flags=re.IGNORECASE)
     if not m:
         return author_entry
@@ -341,21 +337,19 @@ def split_authors(authors: str) -> List:
         for bit in aus:
             if bit == '':
                 continue
-            if bit == '(':  # track open parentheses
+            if bit == '(':
                 depth += 1
                 if depth == 1:
                     blocks.append(c)
                     c = '('
                 else:
                     c = c + bit
-            elif bit == ')':  # track close parentheses
+            elif bit == ')':
                 depth -= 1
                 c = c + bit
                 if depth == 0:
                     blocks.append(c)
                     c = ''
-                else:  # haven't closed, so keep accumulating
-                    continue
             else:
                 c = c + bit
         if c:
@@ -373,8 +367,7 @@ def split_authors(authors: str) -> List:
             for name in names:
                 if not name:
                     continue
-                name = name.rstrip().lstrip()
-                if name:
+                if name := name.rstrip().lstrip():
                     listx.append(name)
 
     # Recombine suffixes that were separated with a comma
@@ -386,7 +379,7 @@ def split_authors(authors: str) -> List:
                 and not re.match(r'\)$', parts[-2]):
             separator = parts.pop()
             last = parts.pop()
-            recomb = "{}{} {}".format(last, separator, p)
+            recomb = f"{last}{separator} {p}"
             parts.append(recomb)
         else:
             parts.append(p)
@@ -429,7 +422,7 @@ def _parse_article_authors(article_author):
     try:
         return [article_author[0], parse_author_affil_utf(article_author[1])]
     except Exception as e:
-        msg = "Author split failed for article {}".format(article_author[0])
+        msg = f"Author split failed for article {article_author[0]}"
         logger.error(msg)
         logger.exception(e)
         return [article_author[0], '']
@@ -455,15 +448,13 @@ def parse_authorline_parallel(article_authors, n_processes=None):
              [ author3_keyname, author3_firstnames, author1_suffix ]
             ]
     """
-    logger.info(
-        'Parsing author lines for {} articles...'.format(len(article_authors))
-    )
+    logger.info(f'Parsing author lines for {len(article_authors)} articles...')
 
     pool = Pool(n_processes)
     parsed = pool.map(_parse_article_authors, article_authors)
-    outdict = {aid: auth for aid, auth in parsed}
+    outdict = dict(parsed)
 
     filename = os.path.join(DIR_OUTPUT, 'authors-parsed.json.gz')
-    logger.info('Saving to {}'.format(filename))
+    logger.info(f'Saving to {filename}')
     with gzip.open(filename, 'wb') as fout:
         fout.write(json.dumps(outdict).encode('utf-8'))
