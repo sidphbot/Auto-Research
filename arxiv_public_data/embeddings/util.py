@@ -39,7 +39,7 @@ def id_to_pathname(aid):
     """
     if '.' in aid:  # new style ArXiv ID
         yymm = aid.split('.')[0]
-        return os.path.join(DIR_FULLTEXT, 'arxiv', yymm, aid + '.txt')
+        return os.path.join(DIR_FULLTEXT, 'arxiv', yymm, f'{aid}.txt')
 
     # old style ArXiv ID
     cat, arxiv_id = re.split(r'(\d+)', aid)[:2]

@@ -73,30 +73,32 @@ class ArxivIDsModel(BaseModel):
     )
 
 if __name__ == '__main__':
-    st.sidebar.image(Image.open('logo_landscape.png'), use_column_width = 'always')
-    st.title('Auto-Research')
-    st.write('#### A no-code utility to generate a detailed well-cited survey with topic clustered sections' 
-             '(draft paper format) and other interesting artifacts from a single research query or a curated set of papers(arxiv ids).')
-    st.write('##### Data Provider: arXiv Open Archive Initiative OAI')
-    st.write('##### GitHub: https://github.com/sidphbot/Auto-Research')
-    download_placeholder = st.container()
+     st.sidebar.image(Image.open('logo_landscape.png'), use_column_width = 'always')
+     st.title('Auto-Research')
+     st.write('#### A no-code utility to generate a detailed well-cited survey with topic clustered sections' 
+              '(draft paper format) and other interesting artifacts from a single research query or a curated set of papers(arxiv ids).')
+     st.write('##### Data Provider: arXiv Open Archive Initiative OAI')
+     st.write('##### GitHub: https://github.com/sidphbot/Auto-Research')
+     download_placeholder = st.container()
 
-    with st.sidebar.form(key="survey_keywords_form"):
-        session_data = sp.pydantic_input(key="keywords_input_model", model=KeywordsModel)
-        st.write('or')
-        session_data.update(sp.pydantic_input(key="arxiv_ids_input_model", model=ArxivIDsModel))
-        submit = st.form_submit_button(label="Submit")
-    st.sidebar.write('#### execution log:')
-        
-    run_kwargs = {'surveyor':get_surveyor_instance(_print_fn=st.sidebar.write, _survey_print_fn=st.write),
-                  'download_placeholder':download_placeholder}
-    if submit:
-        if session_data['research_keywords'] != '':
-            run_kwargs.update({'research_keywords':session_data['research_keywords'], 
-                               'max_search':session_data['max_search'], 
-                               'num_papers':session_data['num_papers']})
-        elif session_data['arxiv_ids'] != '':
-            run_kwargs.update({'arxiv_ids':[id.strip() for id in session_data['arxiv_ids'].split(',')]})
+     with st.sidebar.form(key="survey_keywords_form"):
+         session_data = sp.pydantic_input(key="keywords_input_model", model=KeywordsModel)
+         st.write('or')
+         session_data.update(sp.pydantic_input(key="arxiv_ids_input_model", model=ArxivIDsModel))
+         submit = st.form_submit_button(label="Submit")
+     st.sidebar.write('#### execution log:')
 
-        run_survey(**run_kwargs)
+     run_kwargs = {'surveyor':get_surveyor_instance(_print_fn=st.sidebar.write, _survey_print_fn=st.write),
+                   'download_placeholder':download_placeholder}
+     if submit:
+          if session_data['research_keywords'] != '':
+               run_kwargs.update({'research_keywords':session_data['research_keywords'], 
+                                  'max_search':session_data['max_search'], 
+                                  'num_papers':session_data['num_papers']})
+          elif session_data['arxiv_ids'] != '':
+               run_kwargs['arxiv_ids'] = [
+                   id.strip() for id in session_data['arxiv_ids'].split(',')
+               ]
+
+          run_survey(**run_kwargs)
         

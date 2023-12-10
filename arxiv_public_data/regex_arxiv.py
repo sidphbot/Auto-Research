@@ -45,19 +45,18 @@ def strip_version(name):
 
 def format_cat(name):
     """ Strip subcategory, add hyphen to category name if missing """
-    if '/' in name:  # OLD ID, names contains subcategory 
-        catsubcat, aid = name.split('/')
-        cat = catsubcat.split('.')[0] 
-        return dashdict.get(cat, cat) + "/" + aid
-    else:
+    if '/' not in name:
         return name
+    catsubcat, aid = name.split('/')
+    cat = catsubcat.split('.')[0]
+    return f"{dashdict.get(cat, cat)}/{aid}"
 
 def zeropad_1501(name):
     """ Arxiv IDs after yymm=1501 are padded to 5 zeros """
-    if not '/' in name:  # new ID
+    if '/' not in name:  # new ID
         yymm, num = name.split('.')
         if int(yymm) > 1500 and len(num) < 5:
-            return yymm + ".0" + num
+            return f"{yymm}.0{num}"
     return name
 
 def clean(name):
@@ -89,10 +88,10 @@ RE_NUM_NEW = RE_DATE + r'(?:[.]\d{4,5})' + RE_VERSION
 RE_NUM_OLD = RE_DATE + r'(?:\d{3})' + RE_VERSION
 
 # matches: 1612.00001 1203.0023v2
-RE_ID_NEW = r'(?:{})'.format(RE_NUM_NEW)
+RE_ID_NEW = f'(?:{RE_NUM_NEW})'
 
 # matches: hep-th/11030234 cs/0112345v2 cs.AI/0112345v2
-RE_ID_OLD = r'(?:{}/{})'.format(RE_CATEGORIES, RE_NUM_OLD)
+RE_ID_OLD = f'(?:{RE_CATEGORIES}/{RE_NUM_OLD})'
 
 # =============================================================================
 # matches: https://arxiv.org/abs/ abs/ arxiv.org/abs/
@@ -109,60 +108,64 @@ RE_PREFIX_URL = (
 RE_PREFIX_ARXIV = r'(?i:arxiv\s*[:/\s,.]*\s*)'
 
 # matches:  cs.AI/ cs.AI nucl-th
-RE_PREFIX_CATEGORIES = r'(?i:{})'.format(RE_CATEGORIES)
+RE_PREFIX_CATEGORIES = f'(?i:{RE_CATEGORIES})'
 
 # matches: e-prints: e-print eprints:
 RE_PREFIX_EPRINT = r'(?i:e[-]?print[s]?.{1,3})'
 
 # =============================================================================
 # matches simple old or new identifiers, no fancy business
-REGEX_ARXIV_SIMPLE = r'(?:{}|{})'.format(RE_ID_OLD, RE_ID_NEW)
+REGEX_ARXIV_SIMPLE = f'(?:{RE_ID_OLD}|{RE_ID_NEW})'
 
 # this one follows the guide set forth by:
 #   https://arxiv.org/help/arxiv_identifier
 REGEX_ARXIV_STRICT = (
-    r'(?:{})'.format(RE_PREFIX_ARXIV) +
-    r'(?:'
-      r'({})'.format(RE_ID_OLD) +
-    r'|'
-      r'({})'.format(RE_ID_NEW) +
-    r')'
-)
+    (f'(?:{RE_PREFIX_ARXIV})' + f'(?:({RE_ID_OLD})') + f'|({RE_ID_NEW})'
+) + r')'
 
 # this regex essentially accepts anything that looks like an arxiv id and has
 # the slightest smell of being one as well. that is, if it is an id and
 # mentions anything about the arxiv before hand, then it is an id.
 REGEX_ARXIV_FLEXIBLE = (
-    r'(?:'
-      r'({})'.format(REGEX_ARXIV_SIMPLE) +  # capture
-    r')|(?:'
-      r'(?:'
-        r'(?:{})?'.format(RE_PREFIX_URL) +
-        r'(?:{})?'.format(RE_PREFIX_EPRINT) +
-        r'(?:'
-          r'(?:{})?'.format(RE_PREFIX_ARXIV) +
-          r'({})'.format(RE_ID_OLD) +  # capture
-        r'|'
-          r'(?:{})'.format(RE_PREFIX_ARXIV) +
-          r'(?:{}/)?'.format(RE_CATEGORIES) +
-          r'({})'.format(RE_ID_NEW) +  # capture
-        r')'
-      r')'
-    r'|'
-      r'(?:'
-        r'(?:{})|'.format(RE_PREFIX_URL) +
-        r'(?:{})|'.format(RE_PREFIX_EPRINT) +
-        r'(?:{})|'.format(RE_PREFIX_CATEGORIES) +
-        r'(?:{})'.format(RE_PREFIX_ARXIV) +
-      r')'
-      r'.*?'
-      r'({})'.format(REGEX_ARXIV_SIMPLE) +  # capture
-    r')|(?:'
-      r'(?:[\[\(]\s*)'
-        r'({})'.format(REGEX_ARXIV_SIMPLE) +  # capture
-      r'(?:\s*[\]\)])'
-    r')'
-)
+    (
+        (
+            (
+                (
+                    (
+                        (
+                            (
+                                (
+                                    (
+                                        (
+                                            (
+                                                (
+                                                    f'(?:({REGEX_ARXIV_SIMPLE})'
+                                                    + f')|(?:(?:(?:{RE_PREFIX_URL})?'
+                                                )
+                                                + f'(?:{RE_PREFIX_EPRINT})?'
+                                            )
+                                            + f'(?:(?:{RE_PREFIX_ARXIV})?'
+                                        )
+                                        + f'({RE_ID_OLD})'
+                                    )
+                                    + f'|(?:{RE_PREFIX_ARXIV})'
+                                )
+                                + f'(?:{RE_CATEGORIES}/)?'
+                            )
+                            + f'({RE_ID_NEW})'
+                        )
+                        + f'))|(?:(?:{RE_PREFIX_URL})|'
+                    )
+                    + f'(?:{RE_PREFIX_EPRINT})|'
+                )
+                + f'(?:{RE_PREFIX_CATEGORIES})|'
+            )
+            + f'(?:{RE_PREFIX_ARXIV})'
+        )
+        + f').*?({REGEX_ARXIV_SIMPLE})'
+    )
+    + f')|(?:(?:[\[\(]\s*)({REGEX_ARXIV_SIMPLE})'
+) + r'(?:\s*[\]\)])' r')'
 
 TEST_POSITIVE = [
     'arXiv:quant-ph 1503.01017v3',

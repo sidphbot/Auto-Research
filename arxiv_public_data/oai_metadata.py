@@ -72,27 +72,24 @@ def get_list_record_chunk(resumptionToken=None, harvest_url=URL_ARXIV_OAI,
     if response.status_code == 200:
         return response.text
 
-    if response.status_code == 503:
-        secs = int(response.headers.get('Retry-After', 20)) * 1.5
-        log.info('Requested to wait, waiting {} seconds until retry...'.format(secs))
-
-        time.sleep(secs)
-        return get_list_record_chunk(resumptionToken=resumptionToken)
-    else:
+    if response.status_code != 503:
         raise Exception(
-            'Unknown error in HTTP request {}, status code: {}'.format(
-                response.url, response.status_code
-            )
+            f'Unknown error in HTTP request {response.url}, status code: {response.status_code}'
         )
+    secs = int(response.headers.get('Retry-After', 20)) * 1.5
+    log.info(f'Requested to wait, waiting {secs} seconds until retry...')
+
+    time.sleep(secs)
+    return get_list_record_chunk(resumptionToken=resumptionToken)
 
 def _record_element_text(elm, name):
     """ XML helper function for extracting text from leaf (single-node) elements """
-    item = elm.find('arXiv:{}'.format(name), OAI_XML_NAMESPACES)
+    item = elm.find(f'arXiv:{name}', OAI_XML_NAMESPACES)
     return item.text if item is not None else None
 
 def _record_element_all(elm, name):
     """ XML helper function for extracting text from queries with multiple nodes """
-    return elm.findall('arXiv:{}'.format(name), OAI_XML_NAMESPACES)
+    return elm.findall(f'arXiv:{name}', OAI_XML_NAMESPACES)
 
 def parse_record(elm):
     """
@@ -160,9 +157,7 @@ def check_xml_errors(root):
     error = root.find('OAI:error', OAI_XML_NAMESPACES)
 
     if error is not None:
-        raise RuntimeError(
-            'OAI service returned error: {}'.format(error.text)
-        )
+        raise RuntimeError(f'OAI service returned error: {error.text}')
 
 def find_default_locations():
     outfile = os.path.join(DIR_BASE, 'arxiv-metadata-oai-*.json.gz')
@@ -172,9 +167,7 @@ def find_default_locations():
     fn_outfile = sorted(glob.glob(outfile))
     fn_resume = sorted(glob.glob(resume))
 
-    if len(fn_outfile) > 0:
-        return fn_outfile[-1]
-    return None
+    return fn_outfile[-1] if len(fn_outfile) > 0 else None
 
 def all_of_arxiv(outfile=None, resumptionToken=None, autoresume=True):
     """
@@ -195,28 +188,26 @@ def all_of_arxiv(outfile=None, resumptionToken=None, autoresume=True):
     date = str(datetime.datetime.now()).split(' ')[0]
 
     outfile = (
-        outfile or # user-supplied
-        find_default_locations() or # already in progress 
-        os.path.join(
-            DIR_BASE, 'arxiv-metadata-oai-{}.json.gz'.format(date)
-        ) # new file
+        outfile
+        or find_default_locations()
+        or os.path.join(DIR_BASE, f'arxiv-metadata-oai-{date}.json.gz')
     )
 
     directory = os.path.split(outfile)[0]
     if directory and not os.path.exists(directory):
         os.makedirs(directory)
-    tokenfile = '{}-resumptionToken.txt'.format(outfile)
+    tokenfile = f'{outfile}-resumptionToken.txt'
     chunk_index = 0
     total_records = 0
 
-    log.info('Saving metadata to "{}"'.format(outfile))
+    log.info(f'Saving metadata to "{outfile}"')
 
     resumptionToken = None
     if autoresume:
         try:
             resumptionToken = open(tokenfile, 'r').read()
         except Exception as e:
-            log.warn("No tokenfile found '{}'".format(tokenfile))
+            log.warn(f"No tokenfile found '{tokenfile}'")
             log.info("Starting download from scratch...")
 
     while True:
@@ -277,6 +268,6 @@ def validate_abstract_hashes(metadata, metadata_no_abstract):
     """ Validate that abstracts match the hashes """
     for m, n in zip(metadata, metadata_no_abstract):
         md5 = hashlib.md5(m['abstract'].encode()).hexdigest()
-        if not md5 == n['abstract_md5']:
+        if md5 != n['abstract_md5']:
             return False
     return True

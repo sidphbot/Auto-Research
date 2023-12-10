@@ -33,10 +33,7 @@ def all_articles(directory=DIR_FULLTEXT):
     directory = os.path.abspath(os.path.expanduser(directory))
 
     for root, dirs, files in os.walk(directory):
-        for f in files:
-            if 'txt' in f:
-                out.append(os.path.join(root, f))
-
+        out.extend(os.path.join(root, f) for f in files if 'txt' in f)
     return out
 
 def extract_references(filename, pattern=RE_FLEX):
@@ -75,12 +72,12 @@ def citation_list_inner(articles):
     cites = {}
     for i, article in enumerate(articles):
         if i > 0 and i % 1000 == 0:
-            log.info('Completed {} articles'.format(i))
+            log.info(f'Completed {i} articles')
         try:
             refs = extract_references(article)
             cites[path_to_id(article)] = refs
         except:
-            log.error("Error in {}".format(article))
+            log.error(f"Error in {article}")
             continue
     return cites
 
@@ -100,7 +97,7 @@ def citation_list_parallel(N=cpu_count(), directory=DIR_FULLTEXT):
             all arXiv citations in all articles
     """
     articles = all_articles(directory)
-    log.info('Calculating citation network for {} articles'.format(len(articles)))
+    log.info(f'Calculating citation network for {len(articles)} articles')
 
     pool = Pool(N)
 
@@ -123,6 +120,6 @@ def default_filename():
 def save_to_default_location(citations):
     filename = default_filename()
 
-    log.info('Saving to "{}"'.format(filename))
+    log.info(f'Saving to "{filename}"')
     with gzip.open(filename, 'wb') as fn:
         fn.write(json.dumps(citations).encode('utf-8'))

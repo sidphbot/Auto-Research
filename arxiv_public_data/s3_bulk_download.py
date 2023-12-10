@@ -102,17 +102,17 @@ def download_file(filename, outfile, chunk_size=CHUNK_SIZE, redownload=False,
         }
     )
     if not dryrun:
-        logger.info('Requesting "{}" (costs money!)'.format(filename))
+        logger.info(f'Requesting "{filename}" (costs money!)')
         request = requests.get(url, stream=True)
         response_iter = request.iter_content(chunk_size=chunk_size)
-        logger.info("\t Writing {}".format(outfile))
+        logger.info(f"\t Writing {outfile}")
         with gzip.open(outfile, 'wb') as fout:
-            for i, chunk in enumerate(response_iter):
+            for chunk in response_iter:
                 fout.write(chunk)
                 md5.update(chunk)
     else:
-        logger.info('Requesting "{}" (free!)'.format(filename))
-        logger.info("\t Writing {}".format(outfile))
+        logger.info(f'Requesting "{filename}" (free!)')
+        logger.info(f"\t Writing {outfile}")
     return md5.hexdigest()
 
 def default_manifest_filename():
@@ -159,7 +159,7 @@ def parse_manifest(manifest):
     ]
 
 def _tar_to_filename(filename):
-    return os.path.join(DIR_PDFTARS, os.path.basename(filename)) + '.gz'
+    return f'{os.path.join(DIR_PDFTARS, os.path.basename(filename))}.gz'
 
 def download_check_tarfile(filename, md5_expected, dryrun=False, redownload=False):
     """ Download filename, check its md5sum, and form the output path """
@@ -170,9 +170,7 @@ def download_check_tarfile(filename, md5_expected, dryrun=False, redownload=Fals
 
     if not dryrun:
         if md5_expected != md5_downloaded:
-            msg = "MD5 '{}' does not match expected '{}' for file '{}'".format(
-                md5_downloaded, md5_expected, filename
-            )
+            msg = f"MD5 '{md5_downloaded}' does not match expected '{md5_expected}' for file '{filename}'"
             raise AssertionError(msg)
 
     return outname
@@ -195,13 +193,12 @@ def download_check_tarfiles(list_of_fileinfo, dryrun=False):
 
 def call(cmd, dryrun=False, debug=False):
     """ Spawn a subprocess and execute the string in cmd """
-    if dryrun:
-        logger.info(cmd)
-        return 0
-    else:
+    if not dryrun:
         return subprocess.check_call(
             shlex.split(cmd), stderr=None if debug else open(os.devnull, 'w')
         )
+    logger.info(cmd)
+    return 0
 
 def _make_pathname(filename):
     """
@@ -235,7 +232,7 @@ def process_tarfile_inner(filename, pdfnames=None, processes=1, dryrun=False,
     outname = _tar_to_filename(filename)
 
     if not os.path.exists(outname):
-        msg = 'Tarfile from manifest not found {}, skipping...'.format(outname)
+        msg = f'Tarfile from manifest not found {outname}, skipping...'
         logger.error(msg)
         return
 
@@ -245,7 +242,7 @@ def process_tarfile_inner(filename, pdfnames=None, processes=1, dryrun=False,
         cmd = 'tar --one-top-level -C {} -xf {} {}'
         cmd = cmd.format(DIR_PDFTARS, outname, namelist)
     else:
-        cmd = 'tar --one-top-level -C {} -xf {}'.format(DIR_PDFTARS, outname)
+        cmd = f'tar --one-top-level -C {DIR_PDFTARS} -xf {outname}'
     _call(cmd, dryrun)
 
     basename = os.path.splitext(os.path.basename(filename))[0]
@@ -257,18 +254,18 @@ def process_tarfile_inner(filename, pdfnames=None, processes=1, dryrun=False,
     )
 
     # move txt into final file structure
-    txtfiles = glob.glob('{}/*.txt'.format(pdfdir))
+    txtfiles = glob.glob(f'{pdfdir}/*.txt')
     for tf in txtfiles:
         mvfn = _make_pathname(tf)
         dirname = os.path.dirname(mvfn)
         if not os.path.exists(dirname):
-            _call('mkdir -p {}'.format(dirname), dryrun)
+            _call(f'mkdir -p {dirname}', dryrun)
 
         if not dryrun:
             shutil.move(tf, mvfn)
 
     # clean up pdfs
-    _call('rm -rf {}'.format(os.path.join(DIR_PDFTARS, basename)), dryrun)
+    _call(f'rm -rf {os.path.join(DIR_PDFTARS, basename)}', dryrun)
 
 def process_tarfile(fileinfo, pdfnames=None, dryrun=False, debug=False, processes=1):
     """
@@ -295,10 +292,10 @@ def process_tarfile(fileinfo, pdfnames=None, dryrun=False, debug=False, processe
     md5sum = fileinfo['md5sum']
 
     if check_if_any_processed(fileinfo):
-        logger.info('Tar file appears processed, skipping {}...'.format(filename))
+        logger.info(f'Tar file appears processed, skipping {filename}...')
         return
 
-    logger.info('Processing tar "{}" ...'.format(filename))
+    logger.info(f'Processing tar "{filename}" ...')
     process_tarfile_inner(filename, pdfnames=None, processes=processes, dryrun=dryrun)
 
 def process_manifest_files(list_of_fileinfo, processes=1, dryrun=False):
@@ -341,9 +338,9 @@ def generate_tarfile_indices(manifest):
 
     for fileinfo in manifest:
         name = fileinfo['filename']
-        logger.info("Indexing {}...".format(name))
+        logger.info(f"Indexing {name}...")
 
-        tarname = os.path.join(DIR_PDFTARS, os.path.basename(name))+'.gz'
+        tarname = f'{os.path.join(DIR_PDFTARS, os.path.basename(name))}.gz'
         files = [i for i in tarfile.open(tarname).getnames() if i.endswith('.pdf')]
 
         index[name] = files
@@ -356,7 +353,7 @@ def check_missing_txt_files(index):
     """
     missing = defaultdict(list)
     for tar, pdflist in index.items():
-        logger.info("Checking {}...".format(tar))
+        logger.info(f"Checking {tar}...")
         for pdf in pdflist:
             txt = _make_pathname(pdf).replace('.pdf', '.txt')
 
@@ -371,12 +368,10 @@ def rerun_missing(missing, processes=1):
     files which are missing from the conversion. There are various reasons
     that they can fail.
     """
-    sort = list(reversed(
-        sorted([(k, v) for k, v in missing.items()], key=lambda x: len(x[1]))
-    ))
+    sort = list(reversed(sorted(list(missing.items()), key=lambda x: len(x[1]))))
 
     for tar, names in sort:
-        logger.info("Running {} ({} to do)...".format(tar, len(names)))
+        logger.info(f"Running {tar} ({len(names)} to do)...")
         process_tarfile_inner(
             tar, pdfnames=names, processes=processes,
             timelimit=5 * fulltext.TIMELIMIT
